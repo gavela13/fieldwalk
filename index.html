@@ -363,12 +363,22 @@ function recCount(site,b){
   return areasOf(site,b).length + closetsOf(site,b).length +
          facsOf(site,b).length + pathsOf(site,b).length;
 }
+/* A record counts toward the room tally if it was created from a classroom
+   stub. Older records predate the flag, so fall back to the reference list. */
+function isCountedRoom(def, rec){
+  if (typeof rec.kindRoom === "boolean") return rec.kindRoom;
+  return def.classrooms.indexOf(rec.room) >= 0;
+}
+function countedRooms(site,b){
+  var def = bld(site,b);
+  return areasOf(site,b).filter(function(a){ return isCountedRoom(def,a); }).length;
+}
 function bStatus(site,b){
   var def = bld(site,b);
   var ar = areasOf(site,b), cl = closetsOf(site,b);
   if (recCount(site,b) === 0) return "zero";
   var wantRooms = def.classrooms.length;
-  var haveRooms = ar.filter(function(a){ return a.kindRoom; }).length;
+  var haveRooms = countedRooms(site,b);
   var allLen = ar.every(function(a){ return a.routeFt !== null || a.cne; });
   var needCl = def.switches.length > 0;
   if (haveRooms >= wantRooms && allLen && (!needCl || cl.length > 0)) return "done";
@@ -516,7 +526,7 @@ function scBldgs(v){
     html += '<button class="tile '+st+'" data-b="'+esc(x.b)+'">'+
       '<div class="b">'+esc(x.b)+'</div>'+
       '<div class="d">'+esc(x.desc)+'</div>'+
-      '<div class="m"><span>rooms '+a.filter(function(r){return r.kindRoom;}).length+
+      '<div class="m"><span>rooms '+countedRooms(site,x.b)+
         '/'+x.classrooms.length+'</span>'+
       '<span>closets '+c.length+'/'+(x.switches.length||0)+'</span></div>'+
       '<div class="m" style="margin-top:3px;color:var(--mut);font-weight:400">'+
@@ -749,6 +759,7 @@ function scArea(v){
   var isNew = !r;
   if (!r) {
     r = {id:areaId(site,b,room), site:site, b:b, room:room,
+         kindRoom: !!NAV.isRoom,     // counted classroom vs non-classroom space
          type: NAV.isRoom ? "Classroom" : "Common area",
          closet: DATA.roomCloset[site+"|"+room] || (def.switches[0]||""),
          clg:null, wall:null, spk:null, oth:0, remove:null,
@@ -1431,9 +1442,9 @@ function scMissing(v){
       var why = [];
       if (!recCount(site,x.b)) why.push("NO RECORDS AT ALL");
       else {
-        var hr = a.filter(function(r){ return r.kindRoom!==false; }).length;
-        if (a.length < x.classrooms.length)
-          why.push((x.classrooms.length-a.length)+" of "+x.classrooms.length+" rooms not captured");
+        var hr = countedRooms(site,x.b);
+        if (hr < x.classrooms.length)
+          why.push((x.classrooms.length-hr)+" of "+x.classrooms.length+" rooms not captured");
         var noLen = a.filter(function(r){ return r.routeFt===null && !r.cne; }).length;
         if (noLen) why.push(noLen+" record(s) with no route length and no reason");
         if (x.switches.length && !c.length) why.push("no closet record ("+x.switches.length+" switch(es) listed)");

@@ -1,4 +1,4 @@
-// Rocklin field kit — offline shell cache.
+// Field kit — offline shell cache.
 // Cache-first for the app shell so a cold launch works with no signal.
 // Bump CACHE on every deploy; the old cache is dropped on activate.
 var CACHE = 'fieldwalk-v1';

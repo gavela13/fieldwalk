@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#111111">
+<title>Field Walk — Storage Test</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='34' fill='%23111'/%3E%3Ctext x='90' y='118' font-family='Helvetica,Arial' font-size='88' font-weight='bold' fill='%23fff' text-anchor='middle'%3EFW%3C/text%3E%3C/svg%3E">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:#fff;color:#111}
+  body{font:17px/1.45 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+       padding:calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+       max-width:640px;margin:0 auto;overscroll-behavior:contain}
+  h1{font-size:21px;letter-spacing:-.3px;margin-bottom:2px}
+  .sub{color:#555;font-size:14px;margin-bottom:14px}
+  .card{border:2px solid #111;border-radius:10px;padding:14px;margin-bottom:12px}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;
+       font-weight:700;margin-bottom:6px}
+  .big{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px}
+  .mono{font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+  button{font:600 17px/1 inherit;padding:18px 14px;border:2px solid #111;background:#111;
+         color:#fff;border-radius:10px;width:100%;margin-bottom:8px;min-height:56px;
+         touch-action:manipulation;cursor:pointer}
+  button.alt{background:#fff;color:#111}
+  .row{display:flex;gap:8px}.row>*{flex:1}
+  input{font:17px inherit;padding:14px;border:2px solid #111;border-radius:10px;width:100%;
+        min-height:56px}
+  .ok{color:#0a6b24;font-weight:700}
+  .bad{color:#b00018;font-weight:700}
+  .chk{display:flex;gap:9px;align-items:flex-start;padding:7px 0;
+       border-bottom:1px solid #e3e3e3;font-size:15px}
+  .chk:last-child{border-bottom:0}
+  .chk span:first-child{font-size:19px;line-height:1.1;width:22px;flex:none;text-align:center}
+  .banner{border:2px solid #b00018;background:#b00018;color:#fff;padding:12px;
+          border-radius:10px;font-weight:700;margin-bottom:12px}
+  ol{padding-left:22px}li{margin:6px 0;font-size:15px}
+  textarea{width:100%;min-height:150px;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
+           border:2px solid #111;border-radius:10px;padding:10px;-webkit-user-select:text}
+</style>
+</head>
+<body>
+
+<h1>Field Walk — storage test</h1>
+<div class="sub">Phase 0 gate. This proves the real app's storage will survive the walk.</div>
+
+<div id="banner"></div>
+
+<div class="card">
+  <div class="lbl">Saved counter</div>
+  <div class="big" id="count">0</div>
+  <div class="mono" id="stamp" style="margin-top:8px;color:#555"></div>
+</div>
+
+<div class="row">
+  <button id="bump">+1 &nbsp;Save</button>
+  <button id="note" class="alt">Add note</button>
+</div>
+<input id="txt" placeholder="Type here — saves as you type" autocapitalize="sentences">
+
+<div class="card" style="margin-top:12px">
+  <div class="lbl">Diagnostics</div>
+  <div id="diag"></div>
+</div>
+
+<div class="row">
+  <button id="copy" class="alt">Copy all</button>
+  <button id="raw" class="alt">Show raw</button>
+</div>
+<textarea id="dump" style="display:none" readonly></textarea>
+
+<div class="card">
+  <div class="lbl">Run this test on the iPad, in order</div>
+  <ol>
+    <li>Tap <b>+1 Save</b> a few times and type in the box.</li>
+    <li><b>Add to Home Screen</b> from the Safari share menu.</li>
+    <li>Close Safari completely (swipe it away in the app switcher).</li>
+    <li>Open from the <b>Home Screen icon</b>. The counter must still be there.</li>
+    <li>Tap +1 again, then <b>force-quit</b> and reopen from the icon. Still there.</li>
+    <li>Turn on <b>Airplane Mode</b>. Force-quit. Open from the icon.
+        <b>It must still load.</b> That is the real test.</li>
+    <li>Tap <b>Copy all</b>, then paste into Mail or Notes to confirm export works.</li>
+  </ol>
+  <div style="margin-top:10px;font-size:15px">If step 6 fails, tell me and we walk on
+  paper. Everything else is recoverable; a page that will not open is not.</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KA="fwtest.a", KB="fwtest.b", KM="fwtest.meta";
+  var storageOk=true, lastErr="";
+
+  function g(k){ try{ return localStorage.getItem(k); }catch(e){ lastErr=e.name+": "+e.message; storageOk=false; return null; } }
+  function s(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ lastErr=e.name+": "+e.message; storageOk=false; return false; } }
+
+  // --- alternating double-buffer write with read-back verification ---
+  function save(st){
+    if(!storageOk) return false;
+    var meta={}; try{ meta=JSON.parse(g(KM)||"{}")||{}; }catch(e){ meta={}; }
+    var target = (meta.newest==="a") ? "b" : "a";
+    var key = (target==="a") ? KA : KB;
+    var body = JSON.stringify(st);
+    if(!s(key, body)) return false;
+    if(g(key) !== body){ storageOk=false; lastErr="read-back mismatch"; return false; }
+    s(KM, JSON.stringify({newest:target, seq:(meta.seq||0)+1, savedAt:new Date().toISOString()}));
+    return true;
+  }
+  function load(){
+    var meta={}; try{ meta=JSON.parse(g(KM)||"{}")||{}; }catch(e){}
+    var order = meta.newest==="b" ? [KB,KA] : [KA,KB];
+    for(var i=0;i<order.length;i++){
+      var r=g(order[i]); if(!r) continue;
+      try{ return {st:JSON.parse(r), meta:meta, from:order[i]}; }catch(e){}
+    }
+    return {st:{n:0,txt:"",notes:[]}, meta:meta, from:"(fresh)"};
+  }
+
+  var L=load(), state=L.st, loadedFrom=L.from;
+  if(!state.notes) state.notes=[];
+
+  var $=function(id){ return document.getElementById(id); };
+  var timer=null;
+  function queue(){ clearTimeout(timer); timer=setTimeout(flush,300); }
+  function flush(){ clearTimeout(timer); save(state); paint(); }
+
+  function paint(){
+    $("count").textContent=state.n;
+    var meta={}; try{ meta=JSON.parse(g(KM)||"{}")||{}; }catch(e){}
+    $("stamp").textContent = meta.savedAt
+      ? ("saved "+new Date(meta.savedAt).toLocaleTimeString()+"  ·  write #"+(meta.seq||0)+"  ·  buffer "+(meta.newest||"?"))
+      : "not saved yet";
+    $("banner").innerHTML = storageOk ? "" :
+      '<div class="banner">STORAGE FAILED — data is in memory only. Copy it out now.<br>'+
+      '<span style="font-weight:400;font-size:14px">'+esc(lastErr)+'</span></div>';
+
+    var sw = ("serviceWorker" in navigator);
+    var reg = sw && navigator.serviceWorker.controller;
+    var standalone = (window.navigator.standalone===true) ||
+                     (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    var rows=[
+      [storageOk, "localStorage readable and writable"],
+      [loadedFrom!=="(fresh)", "loaded from "+loadedFrom],
+      [sw, "service worker supported"],
+      [!!reg, reg ? "service worker ACTIVE — offline launch should work"
+                  : "service worker not yet controlling — reload once while online"],
+      [standalone, standalone ? "running standalone (Home Screen icon)"
+                              : "running in a Safari tab, not the icon"],
+      [navigator.onLine===false || navigator.onLine===true, "network: "+(navigator.onLine?"online":"OFFLINE")],
+      [!!(navigator.clipboard&&navigator.clipboard.writeText), "clipboard API available"],
+      [!!navigator.share, "share sheet available"]
+    ];
+    $("diag").innerHTML = rows.map(function(r){
+      return '<div class="chk"><span class="'+(r[0]?"ok":"bad")+'">'+(r[0]?"✓":"✕")+
+             '</span><span>'+esc(r[1])+'</span></div>';
+    }).join("");
+  }
+  function esc(t){ return String(t).replace(/[&<>"]/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+  function payload(){
+    return "=== FIELD WALK STORAGE TEST ===\n"+
+           "when   : "+new Date().toString()+"\n"+
+           "counter: "+state.n+"\n"+
+           "text   : "+state.txt+"\n"+
+           "notes  : "+state.notes.length+"\n"+
+           state.notes.map(function(x){return "  - "+x;}).join("\n")+"\n"+
+           "loaded : "+loadedFrom+"\n"+
+           "meta   : "+(g(KM)||"(none)")+"\n"+
+           "storage: "+(storageOk?"OK":"FAILED — "+lastErr)+"\n"+
+           "ua     : "+navigator.userAgent+"\n"+
+           "--- RAW ---\n"+JSON.stringify(state,null,1)+"\n";
+  }
+
+  $("bump").addEventListener("click", function(){ state.n++; flush(); });
+  $("note").addEventListener("click", function(){
+    state.notes.push(new Date().toLocaleTimeString()+" note "+(state.notes.length+1)); flush(); });
+  $("txt").value = state.txt||"";
+  $("txt").addEventListener("input", function(){ state.txt=this.value; queue(); });
+
+  // Build the string synchronously inside the gesture, then write. An await
+  // before writeText loses user activation and the copy fails silently.
+  $("copy").addEventListener("click", function(){
+    var t=payload(), done=false;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      try{ navigator.clipboard.writeText(t); done=true; }catch(e){}
+    }
+    var ta=$("dump"); ta.value=t; ta.style.display="block"; ta.select();
+    if(!done){ try{ document.execCommand("copy"); }catch(e){} }
+    this.textContent = done ? "Copied ✓" : "Select the text below ↓";
+  });
+  $("raw").addEventListener("click", function(){
+    var ta=$("dump"); ta.value=payload(); ta.style.display="block"; ta.select(); });
+
+  // Flush on every way iOS can take the page away. Timers are throttled in
+  // Low Power Mode and beforeunload is unreliable here.
+  ["pagehide","blur"].forEach(function(ev){ window.addEventListener(ev, flush); });
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState==="hidden") flush(); });
+
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js").then(function(){ setTimeout(paint,600); })
+      .catch(function(e){ lastErr="SW: "+e.message; paint(); });
+  }
+  paint();
+})();
+</script>
+</body>
+</html>

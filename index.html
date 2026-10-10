@@ -169,6 +169,34 @@ textarea.raw{width:100%;min-height:46vh;font:12px/1.45 ui-monospace,Menlo,Consol
   border:2px solid var(--line);border-radius:10px;padding:11px;margin-bottom:11px;
   background:var(--soft)}
 .hidden{display:none !important}
+
+/* ---------- marker card ----------
+   Photographed with the native Camera as the first shot of each group.
+   Deliberately pure black on pure white: it has to survive a phone camera
+   in a dark closet and in direct sun. */
+.marker{position:fixed;inset:0;z-index:200;background:#fff;color:#000;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  padding:calc(18px + env(safe-area-inset-top)) 20px calc(18px + env(safe-area-inset-bottom));
+  -webkit-user-select:none;user-select:none}
+.marker .mk-body{width:100%}
+.marker .mk-l{font-weight:800;letter-spacing:-1px;line-height:1.04;
+  font-size:min(13.5vw,64px);word-break:break-word}
+.marker .mk-site{font-size:min(17vw,86px);letter-spacing:-2px}
+.marker .mk-meta{margin-top:18px;font-size:min(5.6vw,27px);font-weight:700;
+  font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.marker .mk-id{margin-top:6px;font:600 min(4.4vw,21px)/1.25 ui-monospace,Menlo,Consolas,monospace}
+.marker .mk-co{margin-top:4px;font-size:min(3.6vw,17px);font-weight:600;color:#333}
+.marker .mk-warn{margin-top:16px;border:3px solid #000;padding:9px 11px;
+  font-size:min(3.6vw,16px);font-weight:700;line-height:1.3}
+.marker .mk-hint{position:absolute;left:20px;right:20px;
+  bottom:calc(10px + env(safe-area-inset-bottom));
+  font-size:13px;color:#555;font-weight:600;text-align:center}
+.chip.mk{border-color:#000;background:#000;color:#fff}
+@media (orientation:landscape) and (max-height:500px){
+  .marker .mk-l{font-size:min(7.2vw,46px)}
+  .marker .mk-site{font-size:min(9vw,58px)}
+  .marker .mk-warn{display:none}
+}
 </style>
 </head>
 <body>
@@ -325,6 +353,116 @@ function bld(site,b){
 function vals(o){ var r=[]; for (var k in o) if (o.hasOwnProperty(k)) r.push(o[k]); return r; }
 function nextSeq(which){ S.seq[which] = (S.seq[which]||0)+1; return S.seq[which]; }
 function devCode(){ return S.device || "T"; }
+
+/* ------------------------------------------------------------------
+   2b. PHOTOS — marker card + time range, shared by all three forms.
+   iOS strips EXIF when a photo is handed to a web page, so provenance
+   comes from shooting a marker card with the native Camera (which keeps
+   full resolution and real EXIF) and logging the time range here.
+   ------------------------------------------------------------------ */
+function photoWhere(kind, rec){
+  if (kind === "closet")   return rec.room || rec.id;
+  if (kind === "facility") return rec.fac || rec.id;
+  return rec.room;
+}
+function markerLines(kind, rec, site, b){
+  var out = [site, "BUILDING " + b];
+  var who = photoWhere(kind, rec);
+  if (kind === "area")     out.push("ROOM " + who);
+  if (kind === "closet")   out.push("CLOSET " + who);
+  if (kind === "facility") out.push(String(who).toUpperCase());
+  var cl = rec.closet || (rec.switches && rec.switches.join(", ")) || rec.from || "";
+  if (cl) out.push(cl);
+  return out;
+}
+function photoFor(rel){
+  var r = vals(S.photos).filter(function(p){ return p.rel === rel; });
+  return r.length ? r[0] : null;
+}
+/* idempotent: one photo record per source record, so a second Stop
+   cannot mint a duplicate and an abandoned Start still leaves a row */
+function mintPhoto(kind, rec, site, b){
+  var ex = photoFor(rec.id);
+  if (ex) return ex;
+  var pid = "PH-" + devCode() + pad2(nextSeq("ph"));
+  S.photos[pid] = {
+    id: pid, site: site, b: b, room: photoWhere(kind, rec),
+    view: kind === "closet" ? "Rack front" : (kind === "facility" ? "Device" : "Identifier"),
+    desc: markerLines(kind, rec, site, b).join(" | "),
+    rel: rec.id, q: "",
+    folder: site === "RHS" ? "Rocklin High — Job Walk" : "Rocklin Elementary — Job Walk",
+    notes: ""};
+  journal("photos", pid, "mint", rec.id);
+  return S.photos[pid];
+}
+
+function photoBtns(rec){
+  return '<div class="chips">' +
+    '<button class="chip mk" id="pmk">&#9635; MARKER</button>' +
+    '<button class="chip" id="pfrom">' +
+      (rec.photoFrom ? "From " + esc(rec.photoFrom) : "&#9654; Start") + '</button>' +
+    '<button class="chip" id="pto">' +
+      (rec.photoTo ? "To " + esc(rec.photoTo) : "&#9632; Stop") + '</button></div>';
+}
+
+function wirePhoto(kind, rec, site, b, set){
+  function sync(){
+    var p = mintPhoto(kind, rec, site, b);
+    p.notes = "iPhone photos " + (rec.photoFrom || "?") + "–" + (rec.photoTo || "?");
+    p.desc = markerLines(kind, rec, site, b).join(" | ");
+    flushSave();
+  }
+  var mk = $("pmk"), pf = $("pfrom"), pt = $("pto");
+  if (mk) mk.addEventListener("click", function(){
+    if (!rec.photoFrom) set("photoFrom", hhmm());
+    sync();
+    if (pf) pf.textContent = "From " + rec.photoFrom;
+    showMarker(kind, rec, site, b);
+  });
+  if (pf) pf.addEventListener("click", function(){
+    set("photoFrom", hhmm()); sync(); this.textContent = "From " + rec.photoFrom; });
+  if (pt) pt.addEventListener("click", function(){
+    set("photoTo", hhmm()); sync(); this.textContent = "To " + rec.photoTo; });
+}
+
+function clockStr(){
+  var DY = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var d = new Date();
+  return DY[d.getDay()] + " " + d.getDate() + " " + MO[d.getMonth()] + " " + d.getFullYear() +
+         "   " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+}
+
+/* Full-bleed overlay, not a routed screen: it must not disturb the form
+   underneath or the nav stack, and dismiss has to be instant. */
+function showMarker(kind, rec, site, b){
+  var warn = S.clockChecked ? "" :
+    '<div class="mk-warn">Confirm the iPhone and iPad clocks agree before you start. ' +
+    'Photo reconciliation is done by timestamp.</div>';
+  var el = document.createElement("div");
+  el.className = "marker";
+  el.innerHTML = '<div class="mk-body">' +
+    markerLines(kind, rec, site, b).map(function(l, i){
+      return '<div class="mk-l' + (i === 0 ? " mk-site" : "") + '">' + esc(l) + '</div>';
+    }).join("") +
+    '<div class="mk-meta" id="mk-clock">' + esc(clockStr()) + '</div>' +
+    '<div class="mk-id">' + esc(rec.id) + '</div>' +
+    '<div class="mk-co">Moore Enterprises &middot; RFP 26-110</div>' + warn +
+    '</div><div class="mk-hint">photograph this, then shoot the space ' +
+    '&nbsp;&middot;&nbsp; tap anywhere to close</div>';
+  document.body.appendChild(el);
+
+  var tick = setInterval(function(){
+    var c = document.getElementById("mk-clock");
+    if (c) c.textContent = clockStr(); else clearInterval(tick);
+  }, 1000);
+
+  el.addEventListener("click", function(){
+    clearInterval(tick);
+    if (el.parentNode) el.parentNode.removeChild(el);
+    if (!S.clockChecked) { S.clockChecked = true; queueSave(); }
+  });
+}
 
 /* ------------------------------------------------------------------
    3. router
@@ -767,11 +905,16 @@ function scArea(v){
          basis:"Measured / counted", ceil:null, ht:null, acc:null,
          rid:"", rdiff:null, cut:"", photoFrom:null, photoTo:null,
          notes:"", touched:false};
-    S.areas[r.id] = r;
+    /* deliberately NOT inserted here — opening a room and backing out
+       should not persist an empty record. keep() does it on first edit. */
   }
   head(site+" "+b+" · "+room, r.id);
 
-  function set(k,val){ r[k]=val; r.touched=true; journal("areas",r.id,k,val); queueSave(); }
+  function keep(){ if (!S.areas[r.id]) S.areas[r.id] = r; }
+  function set(k,val){
+    keep();
+    r[k]=val; r.touched=true; journal("areas",r.id,k,val); queueSave();
+  }
 
   var std = DATA.standard;
   var stdOn = r.clg===std.ceiling && r.wall===std.wall && r.spk===std.speaker;
@@ -847,14 +990,10 @@ function scArea(v){
 
   /* ---- photos ---- */
   html += '<div class="sec">Photos</div>'+
-    '<div class="note">Shoot on the <b>iPhone</b>. Photograph a written marker first:<br>'+
-    '<b>'+esc(site+" | Building "+b+" | "+room+(r.closet?" | "+r.closet:""))+'</b><br>'+
-    'then overview &rarr; devices &rarr; pathways &rarr; problems. IDs get assigned at '+
-    'the desk from the time range.</div>'+
-    '<div class="chips"><button class="chip" id="phfrom">'+
-      (r.photoFrom?"From "+esc(r.photoFrom):"&#9654; Start "+hhmm())+'</button>'+
-    '<button class="chip" id="phto">'+
-      (r.photoTo?"To "+esc(r.photoTo):"&#9632; Stop")+'</button></div>';
+    '<div class="note">Tap <b>MARKER</b>, photograph the card with the <b>iPhone</b> Camera, '+
+    'then shoot overview &rarr; devices &rarr; pathways &rarr; problems. '+
+    'Photo IDs are assigned at the desk from the time range.</div>'+
+    photoBtns(r);
 
   /* ---- tier 2 ---- */
   html += '<details class="t2"><summary>Details</summary><div class="in">'+
@@ -913,6 +1052,7 @@ function scArea(v){
     var p = S.areas[S.lastArea];
     ["type","closet","clg","wall","spk","oth","remove","routeFt","cne","loops",
      "basis","ceil","ht","acc","rdiff"].forEach(function(k){ r[k]=p[k]; });
+    keep();
     r.touched = true; journal("areas",r.id,"sameAsLast",p.id); flushSave(); render();
   });
 
@@ -962,18 +1102,7 @@ function scArea(v){
     });
   });
 
-  $("phfrom").addEventListener("click", function(){
-    set("photoFrom", hhmm()); this.textContent = "From "+r.photoFrom; });
-  $("phto").addEventListener("click", function(){
-    set("photoTo", hhmm());
-    this.textContent = "To "+r.photoTo;
-    var pid = "PH-"+devCode()+pad2(nextSeq("ph"));
-    S.photos[pid] = {id:pid, site:site, b:b, room:room, view:"Identifier",
-      desc:"Marker + overview + devices + pathways", rel:r.id, q:"",
-      folder:site==="RHS"?"Rocklin High — Job Walk":"Rocklin Elementary — Job Walk",
-      notes:"iPhone photos "+(r.photoFrom||"?")+"–"+(r.photoTo||"?")};
-    flushSave();
-  });
+  wirePhoto("area", r, site, b, set);
 
   bindText(v,"rid",function(x){ set("rid",x); });
   bindText(v,"cut",function(x){ set("cut",x); });
@@ -985,6 +1114,7 @@ function scArea(v){
     flushSave(); back();
   });
   $("savenext").addEventListener("click", function(){
+    keep();
     if (!r.touched) r.touched = true;
     if (r.clg===null && r.wall===null && r.spk===null && !r.oth && !r.cne) {
       if (!confirm("No counts and no “could not establish” on this record. Save anyway?")) return;
@@ -1047,11 +1177,11 @@ function scCloset(v){
     numRow([["panels","24-port panels needed",c.panels]])+
     chipsFld("New cabinet needed","newCab",DATA.enums.yesNoVerify,c.newCab)+
     chipsFld("FIBER PRESENT in this cabinet?","fiber",DATA.enums.yesNoVerify,c.fiber)+
-    '<div class="sec">Photos</div><div class="chips">'+
-      '<button class="chip" id="cfrom">'+(c.photoFrom?"From "+esc(c.photoFrom):"&#9654; Start "+hhmm())+'</button>'+
-      '<button class="chip" id="cto">'+(c.photoTo?"To "+esc(c.photoTo):"&#9632; Stop")+'</button></div>'+
+    '<div class="sec">Photos</div>'+
+      photoBtns(c)+
       '<div class="hint">Rack front, rack rear, cable entry, fiber, power, grounding, '+
-      'clearance. The desk fills the rest from these.</div>'+
+      'clearance. The desk fills the Details fields from these, so shoot them even if '+
+      'you skip the form.</div>'+
     '<div class="fld" style="margin-top:12px"><label>Notes — power, grounding, clearance, '+
       'congestion, outage needs</label><textarea id="cnotes" autocapitalize="sentences">'+
       esc(c.notes)+'</textarea></div>';
@@ -1075,8 +1205,7 @@ function scCloset(v){
   bindText(v,"croom",function(x){ set("room",x); });
   bindText(v,"cserved",function(x){ set("served",x); });
   bindText(v,"cnotes",function(x){ set("notes",x); });
-  $("cfrom").addEventListener("click", function(){ set("photoFrom",hhmm()); this.textContent="From "+c.photoFrom; });
-  $("cto").addEventListener("click", function(){ set("photoTo",hhmm()); this.textContent="To "+c.photoTo; });
+  wirePhoto("closet", c, site, b, set);
   $("cdel").addEventListener("click", function(){
     if (!confirm("Delete this closet record?")) return;
     delete S.closets[c.id]; flushSave(); back();
@@ -1125,9 +1254,10 @@ function scFac(v){
   html += chipsFld("Pathway","pathway",["Underground conduit","Aerial","Surface raceway",
     "Interior","Unknown"],r.pathway);
   html += chipsFld("Power present?","power",["Yes","No","Unknown"],r.power);
-  html += '<div class="sec">Photos</div><div class="chips">'+
-    '<button class="chip" id="ffp">'+(r.photoFrom?"From "+esc(r.photoFrom):"&#9654; Start "+hhmm())+'</button>'+
-    '<button class="chip" id="ftp">'+(r.photoTo?"To "+esc(r.photoTo):"&#9632; Stop")+'</button></div>';
+  html += '<div class="sec">Photos</div>'+
+    photoBtns(r)+
+    '<div class="hint">Shoot the device, its existing cable and where the route comes '+
+    'from. No District reference data exists for these, so the photographs are the record.</div>';
   html += '<div class="fld" style="margin-top:12px"><label>Notes</label>'+
     '<textarea id="fnotes" autocapitalize="sentences">'+esc(r.notes)+'</textarea></div>';
 
@@ -1140,8 +1270,9 @@ function scFac(v){
   bindText(v,"feq",function(x){ set("equip",x); });
   bindText(v,"ffrom",function(x){ set("from",x); });
   bindText(v,"fnotes",function(x){ set("notes",x); });
-  $("ffp").addEventListener("click", function(){ set("photoFrom",hhmm()); this.textContent="From "+r.photoFrom; });
-  $("ftp").addEventListener("click", function(){ set("photoTo",hhmm()); this.textContent="To "+r.photoTo; });
+  /* file the photo under the bid line this facility prices to, matching
+     how facilities are exported into Areas */
+  wirePhoto("facility", r, site, r.priceTo || b, set);
   $("fdel").addEventListener("click", function(){
     if (!confirm("Delete this facility record?")) return;
     delete S.facs[r.id]; flushSave(); back();
@@ -1407,13 +1538,32 @@ function scExport(v){
     'write the Note.</div>'+
     '<textarea class="raw hidden" id="raw" readonly></textarea>';
 
+  /* The clipboard write must be issued synchronously inside the gesture,
+     but its PROMISE must be awaited before claiming success — reporting
+     "Copied" on a rejected write would make a failed checkpoint look like
+     a good one. The textarea is always loaded as the fallback. */
   $("copy").addEventListener("click", function(){
-    var ok = false;
-    try { if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(payload); ok = true; } } catch(e){}
+    var btn = this;
     var ta = $("raw"); ta.value = payload; ta.className = "raw"; ta.select();
-    if (!ok) { try { ok = document.execCommand("copy"); } catch(e){} }
-    this.textContent = ok ? "Copied ✓ — now paste into Mail" : "Select the text below ↓";
+    var p = null;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        p = navigator.clipboard.writeText(payload);
+      }
+    } catch(e){ p = null; }
+    function fallback(){
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch(e){}
+      btn.textContent = ok ? "Copied ✓ — now paste into Mail"
+                           : "NOT copied — select the text below ↓";
+    }
+    if (p && typeof p.then === "function") {
+      btn.textContent = "Copying…";
+      p.then(function(){ btn.textContent = "Copied ✓ — now paste into Mail"; },
+             function(){ fallback(); });
+    } else {
+      fallback();
+    }
     S.checkpointAt = new Date().toISOString(); flushSave();
   });
   $("share").addEventListener("click", function(){

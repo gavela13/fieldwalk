@@ -5,208 +5,1474 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FieldWalk">
 <meta name="theme-color" content="#111111">
-<title>Field Walk — Storage Test</title>
+<title>Field Walk</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='34' fill='%23111'/%3E%3Ctext x='90' y='118' font-family='Helvetica,Arial' font-size='88' font-weight='bold' fill='%23fff' text-anchor='middle'%3EFW%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='34' fill='%23111'/%3E%3Ctext x='90' y='118' font-family='Helvetica,Arial' font-size='82' font-weight='bold' fill='%23fff' text-anchor='middle'%3EFW%3C/text%3E%3C/svg%3E">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{background:#fff;color:#111}
-  body{font:17px/1.45 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-       padding:calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
-       max-width:640px;margin:0 auto;overscroll-behavior:contain}
-  h1{font-size:21px;letter-spacing:-.3px;margin-bottom:2px}
-  .sub{color:#555;font-size:14px;margin-bottom:14px}
-  .card{border:2px solid #111;border-radius:10px;padding:14px;margin-bottom:12px}
-  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;
-       font-weight:700;margin-bottom:6px}
-  .big{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px}
-  .mono{font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
-  button{font:600 17px/1 inherit;padding:18px 14px;border:2px solid #111;background:#111;
-         color:#fff;border-radius:10px;width:100%;margin-bottom:8px;min-height:56px;
-         touch-action:manipulation;cursor:pointer}
-  button.alt{background:#fff;color:#111}
-  .row{display:flex;gap:8px}.row>*{flex:1}
-  input{font:17px inherit;padding:14px;border:2px solid #111;border-radius:10px;width:100%;
-        min-height:56px}
-  .ok{color:#0a6b24;font-weight:700}
-  .bad{color:#b00018;font-weight:700}
-  .chk{display:flex;gap:9px;align-items:flex-start;padding:7px 0;
-       border-bottom:1px solid #e3e3e3;font-size:15px}
-  .chk:last-child{border-bottom:0}
-  .chk span:first-child{font-size:19px;line-height:1.1;width:22px;flex:none;text-align:center}
-  .banner{border:2px solid #b00018;background:#b00018;color:#fff;padding:12px;
-          border-radius:10px;font-weight:700;margin-bottom:12px}
-  ol{padding-left:22px}li{margin:6px 0;font-size:15px}
-  textarea{width:100%;min-height:150px;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
-           border:2px solid #111;border-radius:10px;padding:10px;-webkit-user-select:text}
+:root{
+  --ink:#111; --bg:#fff; --mut:#5a5a5a; --line:#d4d4d4; --soft:#f4f4f4;
+  --new:#0a6b24; --newbg:#eaf6ed; --rm:#8a5200; --rmbg:#fdf3e3;
+  --bad:#b00018; --badbg:#fdeaec; --warn:#8a5200;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font:17px/1.4 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  color:var(--ink);background:var(--bg);overscroll-behavior:contain;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+button,input,textarea,select{font:inherit;font-size:17px;color:var(--ink)}
+button{touch-action:manipulation;cursor:pointer;background:none;border:0}
+
+/* ---------- chrome ---------- */
+header{position:sticky;top:0;z-index:40;background:var(--bg);
+  border-bottom:2px solid var(--ink);padding-top:env(safe-area-inset-top)}
+.hbar{display:flex;align-items:center;gap:8px;padding:8px 12px;min-height:52px}
+.hbar .back{font-weight:700;font-size:16px;padding:8px 10px;margin-left:-10px;
+  border-radius:8px}
+.hbar .ttl{flex:1;font-weight:700;font-size:17px;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .ttl small{display:block;font-weight:400;font-size:12px;color:var(--mut);
+  text-transform:uppercase;letter-spacing:.8px}
+.dot{width:11px;height:11px;border-radius:50%;background:var(--new);flex:none}
+.dot.bad{background:var(--bad)}
+.hbtn{border:2px solid var(--ink);border-radius:9px;padding:9px 12px;font-weight:700;
+  font-size:14px;white-space:nowrap}
+.banner{background:var(--bad);color:#fff;padding:10px 12px;font-weight:700;font-size:14px}
+.banner.zero{background:var(--ink)}
+.banner small{display:block;font-weight:400;font-size:12.5px;opacity:.92;margin-top:2px}
+
+footer{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--ink);
+  color:#fff;padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  font-size:12.5px;display:flex;gap:10px;align-items:center}
+footer .f1{flex:1;line-height:1.3}
+footer b{font-size:14px}
+footer .fx{border:1.5px solid #fff;border-radius:8px;padding:8px 11px;color:#fff;
+  font-weight:700;font-size:13px}
+
+main{padding:12px}
+.wrap{max-width:720px;margin:0 auto}
+
+/* ---------- lists / tiles ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media (max-width:420px){.grid{grid-template-columns:1fr}}
+.tile{border:2px solid var(--line);border-radius:12px;padding:11px 12px;text-align:left;
+  display:block;width:100%;background:var(--bg)}
+.tile.zero{border-color:var(--ink);background:#fff}
+.tile.part{border-color:var(--warn);background:#fffdf7}
+.tile.done{border-color:var(--new);background:var(--newbg)}
+.tile .b{font-size:25px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.tile .d{font-size:13px;color:var(--mut);margin:3px 0 7px;line-height:1.25;
+  min-height:2.4em}
+.tile .m{font-size:12.5px;font-weight:600;display:flex;gap:9px;flex-wrap:wrap}
+.tile .pri{display:inline-block;background:var(--ink);color:#fff;font-size:10.5px;
+  font-weight:800;letter-spacing:.8px;padding:2px 6px;border-radius:4px;
+  margin-top:5px}
+.tile .fl{font-size:11.5px;color:var(--bad);font-weight:700;margin-top:4px}
+
+.row{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);
+  padding:14px 4px;min-height:56px;display:flex;align-items:center;gap:10px;
+  background:var(--bg)}
+.row .tick{width:26px;flex:none;font-size:19px;text-align:center;font-weight:800}
+.row .rl{flex:1;font-weight:600}
+.row .rl small{display:block;font-weight:400;font-size:12.5px;color:var(--mut)}
+.row .rr{font-size:13px;color:var(--mut);text-align:right;font-weight:600}
+.row.on .rl{color:var(--new)}
+
+/* ---------- forms ---------- */
+.sec{margin:14px 0 6px;font-size:11.5px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1.1px;color:var(--mut)}
+.fld{margin-bottom:12px}
+.fld>label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+.fld .hint{font-size:12.5px;color:var(--mut);margin-top:4px;line-height:1.35}
+input[type=text],textarea,select{width:100%;border:2px solid var(--line);border-radius:10px;
+  padding:13px;min-height:52px;background:var(--bg)}
+textarea{min-height:88px;line-height:1.4}
+input:focus,textarea:focus,select:focus{outline:0;border-color:var(--ink)}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:2px solid var(--line);border-radius:999px;padding:11px 14px;font-size:15px;
+  font-weight:600;min-height:46px;background:var(--bg)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.used{opacity:.42}
+.chip.sm{padding:8px 11px;font-size:13.5px;min-height:38px}
+
+.big-ok{width:100%;border:3px solid var(--new);background:var(--newbg);color:var(--new);
+  border-radius:12px;padding:18px;font-size:18px;font-weight:800;min-height:64px;
+  letter-spacing:.2px}
+.big-ok.on{background:var(--new);color:#fff}
+
+.block{border:2px solid var(--line);border-left-width:9px;border-radius:10px;
+  padding:12px;margin-bottom:11px}
+.block.new{border-color:var(--new);background:var(--newbg)}
+.block.rm{border-color:var(--rm);background:var(--rmbg)}
+.block h4{font-size:14px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.block .why{font-size:12.5px;color:#333;margin:3px 0 10px;line-height:1.35}
+.step{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.step .sl{flex:1;font-size:15px;font-weight:600}
+.step .sv{font-size:23px;font-weight:800;min-width:46px;text-align:center}
+.pm{width:56px;height:56px;border:2px solid var(--ink);border-radius:11px;
+  font-size:26px;font-weight:700;line-height:1;flex:none;background:var(--bg)}
+.tot{border-top:2px solid currentColor;margin-top:9px;padding-top:9px;
+  display:flex;justify-content:space-between;align-items:baseline;font-weight:800}
+.tot .tv{font-size:34px;letter-spacing:-1px;line-height:1}
+.ruleline{font-size:12px;text-align:center;color:var(--mut);font-weight:700;
+  letter-spacing:.2px;margin:-4px 0 11px}
+
+/* keypad */
+.kp-val{border:2px solid var(--ink);border-radius:10px;padding:12px;text-align:center;
+  font-size:34px;font-weight:800;letter-spacing:-1px;min-height:62px}
+.kp-val.cne{border-color:var(--warn);background:var(--rmbg);color:var(--warn);
+  font-size:16px;font-weight:800;letter-spacing:0;line-height:1.25;padding:10px}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.kp button{border:2px solid var(--line);border-radius:10px;height:56px;font-size:23px;
+  font-weight:700;background:var(--bg)}
+.kp button.wide{grid-column:span 2}
+.cne-btn{width:100%;border:2px solid var(--warn);color:var(--warn);background:var(--rmbg);
+  border-radius:10px;padding:14px;font-weight:800;font-size:15px;margin-top:8px;
+  min-height:54px}
+.cne-btn.on{background:var(--warn);color:#fff}
+.sub-live{font-size:14px;font-weight:700;margin-top:8px;padding:9px;border-radius:9px;
+  background:var(--soft);text-align:center}
+.sub-live.none{color:var(--mut)}
+.overmax{color:var(--bad);font-weight:700;font-size:12.5px;margin-top:5px}
+
+details.t2{border:2px solid var(--line);border-radius:10px;margin:12px 0}
+details.t2>summary{padding:14px;font-weight:700;font-size:15px;cursor:pointer;
+  list-style:none;min-height:52px;display:flex;align-items:center;gap:8px}
+details.t2>summary::-webkit-details-marker{display:none}
+details.t2>summary:after{content:"optional — fill at the desk";font-weight:400;
+  font-size:12px;color:var(--mut);margin-left:auto}
+details.t2[open]>summary{border-bottom:1px solid var(--line)}
+details.t2 .in{padding:12px}
+
+.save{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;
+  z-index:39;padding:9px 12px;background:linear-gradient(transparent,var(--bg) 42%)}
+.save button{width:100%;border:2px solid var(--ink);background:var(--ink);color:#fff;
+  border-radius:12px;padding:17px;font-size:18px;font-weight:800;min-height:60px}
+.save .two{display:flex;gap:8px}
+.save .two button.alt{background:var(--bg);color:var(--ink);flex:0 0 38%}
+
+.note{border:2px solid var(--line);border-radius:10px;padding:11px;font-size:13.5px;
+  line-height:1.4;margin-bottom:11px;background:var(--soft)}
+.note.flag{border-color:var(--bad);background:var(--badbg)}
+.note.flag b{color:var(--bad)}
+.note ul{padding-left:18px;margin-top:4px}
+.note li{margin:3px 0}
+
+textarea.raw{width:100%;min-height:46vh;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
+  -webkit-user-select:text;user-select:text}
+.ex-btn{width:100%;border:2px solid var(--ink);border-radius:11px;padding:16px;
+  font-weight:800;font-size:16px;margin-bottom:8px;min-height:58px;background:var(--bg)}
+.ex-btn.pri{background:var(--ink);color:#fff}
+.sum{font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;
+  border:2px solid var(--line);border-radius:10px;padding:11px;margin-bottom:11px;
+  background:var(--soft)}
+.hidden{display:none !important}
 </style>
 </head>
 <body>
-
-<h1>Field Walk — storage test</h1>
-<div class="sub">Phase 0 gate. This proves the real app's storage will survive the walk.</div>
-
-<div id="banner"></div>
-
-<div class="card">
-  <div class="lbl">Saved counter</div>
-  <div class="big" id="count">0</div>
-  <div class="mono" id="stamp" style="margin-top:8px;color:#555"></div>
-</div>
-
-<div class="row">
-  <button id="bump">+1 &nbsp;Save</button>
-  <button id="note" class="alt">Add note</button>
-</div>
-<input id="txt" placeholder="Type here — saves as you type" autocapitalize="sentences">
-
-<div class="card" style="margin-top:12px">
-  <div class="lbl">Diagnostics</div>
-  <div id="diag"></div>
-</div>
-
-<div class="row">
-  <button id="copy" class="alt">Copy all</button>
-  <button id="raw" class="alt">Show raw</button>
-</div>
-<textarea id="dump" style="display:none" readonly></textarea>
-
-<div class="card">
-  <div class="lbl">Run this test on the iPad, in order</div>
-  <ol>
-    <li>Tap <b>+1 Save</b> a few times and type in the box.</li>
-    <li><b>Add to Home Screen</b> from the Safari share menu.</li>
-    <li>Close Safari completely (swipe it away in the app switcher).</li>
-    <li>Open from the <b>Home Screen icon</b>. The counter must still be there.</li>
-    <li>Tap +1 again, then <b>force-quit</b> and reopen from the icon. Still there.</li>
-    <li>Turn on <b>Airplane Mode</b>. Force-quit. Open from the icon.
-        <b>It must still load.</b> That is the real test.</li>
-    <li>Tap <b>Copy all</b>, then paste into Mail or Notes to confirm export works.</li>
-  </ol>
-  <div style="margin-top:10px;font-size:15px">If step 6 fails, tell me and we walk on
-  paper. Everything else is recoverable; a page that will not open is not.</div>
-</div>
+<header>
+  <div class="hbar">
+    <button class="back hidden" id="back">&lsaquo; Back</button>
+    <div class="ttl" id="ttl">Field Walk<small id="sub">loading</small></div>
+    <div class="dot" id="dot" title="storage"></div>
+    <button class="hbtn" id="exp">Export</button>
+  </div>
+  <div id="banners"></div>
+</header>
+<main><div class="wrap" id="view"></div></main>
+<div class="save hidden" id="savebar"></div>
+<footer>
+  <div class="f1" id="foot">&nbsp;</div>
+  <button class="fx" id="miss">Missing</button>
+</footer>
 
 <script>
-(function(){
-  "use strict";
-  var KA="fwtest.a", KB="fwtest.b", KM="fwtest.meta";
-  var storageOk=true, lastErr="";
+/* ===================================================================
+   Field Walk — Rocklin RFP 26-110 job-walk capture
+   Offline-first. Nothing here touches the network.
+   =================================================================== */
+"use strict";
+var DATA = {"sites":{"RES":{"name":"Rocklin Elementary School","addr":"5025 Meyers Street, Rocklin, CA 95677","buildings":14,"rooms":39},"RHS":{"name":"Rocklin High School","addr":"5301 Victory Lane, Rocklin, CA 95765","buildings":18,"rooms":90}},"buildings":[{"site":"RES","b":"A","desc":"Multi-Purpose Room","rooms":0,"clsDrops":0,"extraB":3,"extraA":3,"maxLen":200,"classrooms":[],"spaces":["MPR","Kitchen","Stage","Storage"],"switches":["RE-A-CX6300-2","RE-A-Basement-15"],"flags":[]},{"site":"RES","b":"B","desc":"Office / Administration","rooms":0,"clsDrops":0,"extraB":10,"extraA":32,"maxLen":66,"classrooms":[],"spaces":["Front Office","Health","Principal","Workroom","Staff Rm"],"switches":[],"flags":["EXTRA RUNS: B says 10, A says 32 - COUNT cameras + speakers + horns","No closet shown; appears served from Building C - CONFIRM"]},{"site":"RES","b":"C","desc":"Library, Rooms 1-4","rooms":4,"clsDrops":48,"extraB":4,"extraA":36,"maxLen":222,"classrooms":["1","2","3","4"],"spaces":["Library","Staff Rm","MDF"],"switches":["RE-C-CX6400-1"],"flags":["EXTRA RUNS: B says 4, A says 36 - COUNT","MDF / core closet"]},{"site":"RES","b":"D","desc":"Rooms 5-9","rooms":5,"clsDrops":60,"extraB":2,"extraA":2,"maxLen":222,"classrooms":["5","6","7","8","9"],"spaces":[],"switches":["RE-D-5-CX6300-3"],"flags":[]},{"site":"RES","b":"E","desc":"Rooms 10-14","rooms":5,"clsDrops":60,"extraB":6,"extraA":6,"maxLen":222,"classrooms":["10","11","12","13","14"],"spaces":["11C","11D","E-PSY"],"switches":["RE-E-10-CX6300-4"],"flags":[]},{"site":"RES","b":"F","desc":"Rooms 15, 15A, 16, 17","rooms":4,"clsDrops":48,"extraB":1,"extraA":1,"maxLen":222,"classrooms":["15","15A","16","17"],"spaces":["Storage"],"switches":["RE-F-15-CX6300M-5"],"flags":[]},{"site":"RES","b":"G","desc":"Rooms 28-29","rooms":2,"clsDrops":24,"extraB":4,"extraA":4,"maxLen":220,"classrooms":["28","29"],"spaces":[],"switches":["RE-G-CX6300M-6"],"flags":["ROOM COUNT: B/C say 2 rooms (28-29); A says 5 rooms - G and H appear SWAPPED. COUNT DOORS","SWITCH: App C says RE-G-CX6300M-6; App A says RE-P-31-CX6300-12 - OPEN CLOSET AND READ LABEL"]},{"site":"RES","b":"H","desc":"Rooms 30-34","rooms":5,"clsDrops":60,"extraB":2,"extraA":2,"maxLen":90,"classrooms":["30","31","32","33","34"],"spaces":[],"switches":["RE-P-31-CX6300-12","RE-P-33-CX6300-10"],"flags":["ROOM COUNT: B/C say 5 rooms (30-34); A says 2 rooms (33-34) - SWAPPED WITH G. COUNT DOORS"]},{"site":"RES","b":"I","desc":"Room 39 (CK / Pre)","rooms":1,"clsDrops":12,"extraB":0,"extraA":0,"maxLen":null,"classrooms":["39"],"spaces":[],"switches":[],"flags":["No max length given","Serving closet unknown - CONFIRM IN FIELD"]},{"site":"RES","b":"J","desc":"Gym / PE / Music","rooms":1,"clsDrops":12,"extraB":8,"extraA":24,"maxLen":150,"classrooms":["Gym"],"spaces":["PE","Music"],"switches":["RE-G-CX6300M-6"],"flags":["EXTRA RUNS: B says 8, A says 24 - COUNT","Serving closet - CONFIRM IN FIELD (App A attributes RE-G-CX6300M-6)","Indoor horns Gym-In-NE, Gym-In-SW; exterior SPK-Out-J-W/-J-E/-J-N"]},{"site":"RES","b":"K","desc":"Rooms 18-21","rooms":4,"clsDrops":48,"extraB":0,"extraA":0,"maxLen":141,"classrooms":["18","19","20","21"],"spaces":[],"switches":["RE-H-21-CX6300-7"],"flags":["Site plan K = InterMapper H"]},{"site":"RES","b":"L","desc":"Rooms 22-23","rooms":2,"clsDrops":24,"extraB":1,"extraA":1,"maxLen":75,"classrooms":["22","23"],"spaces":[],"switches":["RE-I-22-CX6300-8"],"flags":["Site plan L = InterMapper I"]},{"site":"RES","b":"M","desc":"Rooms 24-27","rooms":4,"clsDrops":48,"extraB":5,"extraA":5,"maxLen":141,"classrooms":["24","25","26","27"],"spaces":["Psych","SLP","APE","Counseling"],"switches":["RE-J-27-CX6300-9"],"flags":["Site plan M = InterMapper J"]},{"site":"RES","b":"PTC","desc":"Rooms 37, 38 (PTC / ELO)","rooms":2,"clsDrops":24,"extraB":1,"extraA":1,"maxLen":133,"classrooms":["37","38"],"spaces":["Old OT Office"],"switches":["RE-P-37-CX6300-11","RE-P-40-CX6300-13"],"flags":["RE-P-40-CX6300-13 serves a Room 40 NOT on the 2023 site plan - FIND IT"]},{"site":"RHS","b":"A","desc":"Athletics - Large Gym, Small Gym, A1, A2, PE, Locker Rooms","rooms":2,"clsDrops":24,"extraB":28,"extraA":28,"maxLen":190,"classrooms":["A1","A2"],"spaces":["Large Gym","Small Gym","PE","Locker-Boys","Locker-Girls"],"switches":["RH-A-CX6300-24","RH-A-CX6300M-30"],"flags":["12 cameras, 9 int spkrs, 4 indoor horns, 5 ext horns on record"]},{"site":"RHS","b":"B","desc":"Theater - B1 Vocal Music, B2 Instrumental Music","rooms":2,"clsDrops":24,"extraB":4,"extraA":24,"maxLen":290,"classrooms":["B1","B2"],"spaces":["Theater","Lobby","Studio","Stage","Storage"],"switches":["RH-B-TH-DR-CX6300-25"],"flags":["EXTRA RUNS: B says 4, A says 24 - COUNT","Longest max run on site: 290 ft"]},{"site":"RHS","b":"C","desc":"Art / Photo / Home Economics, Rooms 1-5","rooms":5,"clsDrops":60,"extraB":6,"extraA":6,"maxLen":135,"classrooms":["C1","C2","C3","C4","C5"],"spaces":[],"switches":["RH-C-4-CX6300M-26"],"flags":[]},{"site":"RHS","b":"D","desc":"Cafeteria / Activities","rooms":1,"clsDrops":12,"extraB":16,"extraA":16,"maxLen":129,"classrooms":["Cafeteria"],"spaces":["Kitchen","ASB","Staff Lounge","Custodian"],"switches":["RH-D-CX6300-22","RH-D-ASB-CX6300-28"],"flags":["2 cameras marked OLD on District record"]},{"site":"RHS","b":"E","desc":"Administration","rooms":0,"clsDrops":0,"extraB":10,"extraA":48,"maxLen":182,"classrooms":[],"spaces":["Main Office","Counseling","Attendance","AP Office"],"switches":["RH-E-CX6405-1"],"flags":["EXTRA RUNS: B says 10, A says 48 - COUNT","App A has the building letter corrupted to '259'","MDF / core closet","24 clocks on record (battery - NOT cabled)"]},{"site":"RHS","b":"F","desc":"Science, Rooms 1-4","rooms":4,"clsDrops":48,"extraB":6,"extraA":6,"maxLen":150,"classrooms":["F1","F2","F3","F4"],"spaces":["F Hallway"],"switches":["RH-F-CX6300-5"],"flags":[]},{"site":"RHS","b":"FM","desc":"Facility Maintenance","rooms":0,"clsDrops":0,"extraB":2,"extraA":12,"maxLen":50,"classrooms":[],"spaces":["Field Office","Field Storage"],"switches":["RH-FM-CX6300-20"],"flags":["EXTRA RUNS: B says 2, A says 12 - COUNT","ATHLETICS PRICED HERE: Field Maintenance + Field Storage"]},{"site":"RHS","b":"Football","desc":"Ticket Booth / Press Box","rooms":0,"clsDrops":0,"extraB":1,"extraA":6,"maxLen":95,"classrooms":[],"spaces":["Ticket Booth","Press Box","Score Box","Scoreboard"],"switches":["RH-Football-TB-CX6100-32","RH-Football-PB-CX6100-33"],"flags":["EXTRA RUNS: B says 1, A says 6 - COUNT","ATHLETICS PRICED HERE: stadium, softball, baseball, soccer, tennis, JV fields"]},{"site":"RHS","b":"G","desc":"Physics / Chemistry, Rooms 1-3","rooms":3,"clsDrops":36,"extraB":3,"extraA":3,"maxLen":150,"classrooms":["G1","G2","G3"],"spaces":["G4?"],"switches":["RH-G-CX6300-6"],"flags":["Site map label OVERPRINTED - G may contain TWO switches. COUNT THEM","Speaker sheet shows G1-G4; site plan shows 3 rooms. COUNT DOORS"]},{"site":"RHS","b":"H","desc":"Computer / Resource, Rooms 1-7","rooms":7,"clsDrops":84,"extraB":1,"extraA":1,"maxLen":190,"classrooms":["H1","H2","H3","H4","H5","H6","H7"],"spaces":[],"switches":["RH-H-1-CX6300-7","RH-H-7-CX6300-8"],"flags":[]},{"site":"RHS","b":"J","desc":"English, Rooms 1-8","rooms":8,"clsDrops":96,"extraB":3,"extraA":3,"maxLen":80,"classrooms":["J1","J2","J3","J4","J5","J6","J7","J8"],"spaces":[],"switches":["RH-J-1-CX6300-9","RH-J-1-CX6300-10","RH-J-1-Tech-CX6300-2","RH-J-2-CX6300-35"],"flags":["THREE switches sit in J-1 - likely ONE physical closet. RECORD WHICH SHARE A CABINET"]},{"site":"RHS","b":"K","desc":"Math, Rooms 1-6","rooms":6,"clsDrops":72,"extraB":1,"extraA":1,"maxLen":80,"classrooms":["K1","K2","K3","K4","K5","K6"],"spaces":[],"switches":["RH-K-5-CX6300-11"],"flags":[]},{"site":"RHS","b":"L","desc":"Social Science, Rooms 2-6","rooms":5,"clsDrops":60,"extraB":4,"extraA":4,"maxLen":135,"classrooms":["L2","L3","L4","L5","L6"],"spaces":["L1?"],"switches":["RH-L-CX6300-12"],"flags":["Speaker sheet shows L1-L6; site plan shows 5 rooms. COUNT DOORS"]},{"site":"RHS","b":"M","desc":"Technology Center, Rooms 1-5","rooms":5,"clsDrops":60,"extraB":11,"extraA":80,"maxLen":180,"classrooms":["M1","M2","M3","M4","M5"],"spaces":["Research Area"],"switches":["RH-M-CX6400-23"],"flags":["EXTRA RUNS: B says 11, A says 80, C says 84 - THREE VALUES. COUNT CAREFULLY","LABS in M2, M4, M5 with ~40 STATIONS EACH - inventory individually, 12 is not a cap"]},{"site":"RHS","b":"N","desc":"Library","rooms":1,"clsDrops":12,"extraB":7,"extraA":7,"maxLen":150,"classrooms":["Library"],"spaces":["Bookroom","Counseling","College/Career"],"switches":["RH-N-CU-CX6300-34"],"flags":[]},{"site":"RHS","b":"Pool","desc":"Aquatic Center","rooms":0,"clsDrops":0,"extraB":0,"extraA":0,"maxLen":180,"classrooms":[],"spaces":["Pool Deck","Equipment Rm","Scoreboard / Timing"],"switches":["RH-Pool-CX6200-31"],"flags":["ROOMS: B says 0; A and C say 1 room at SIX drops (only departure from the 12-drop standard anywhere)","NOT on the January 2025 speaker count - VERIFY","ATHLETICS PRICED HERE: Aquatic Center scoreboard + TIMING SYSTEM"]},{"site":"RHS","b":"R","desc":"Relocatables, Rooms 1-30","rooms":30,"clsDrops":360,"extraB":9,"extraA":9,"maxLen":150,"classrooms":["R1","R2","R3","R4","R5","R6","R7","R8","R9","R10","R11","R12","R13","R14","R15","R16","R17","R18","R19","R20","R21","R22","R23","R24","R25","R26","R27","R28","R29","R30"],"spaces":[],"switches":["RH-R-3-CX6300-13","RH-R-8-CX6300-14","RH-R-12-CX6300-15","RH-R-16-CX6300-16","RH-R-20-CX6300-17","RH-R-27-CX6300-18","RH-R-29-CX6300-19"],"flags":["ROOM COUNT: B/C say 30; App A sub-rows sum to 29. R30 HAS NO ROW AND NO SERVING CLOSET - FIND R30","Max run varies by cluster: R1-6=150, R7-22=120, R23-28=150, R29=50"]},{"site":"RHS","b":"V","desc":"Relocatables, Rooms 40-46 and 48-51","rooms":11,"clsDrops":132,"extraB":5,"extraA":5,"maxLen":170,"classrooms":["V40","V41","V42","V43","V44","V45","V46","V48","V49","V50","V51"],"spaces":[],"switches":["RH-V-Annex-CX6300-3","RH-V-Annex-CX6300-4","RH-V-43-CX6300-27","RH-V-49-CX6300-29","RH-V-51-CX6300M-21"],"flags":["Room 47 NOT on the site plan","TWO Annex switches - likely ONE physical closet. RECORD WHICH SHARE A CABINET","Max run varies: V40-44=156, V45-46=170, V48-50=60, V51=50"]}],"roomCloset":{"RHS|R1":"RH-R-3-CX6300-13","RHS|R2":"RH-R-3-CX6300-13","RHS|R3":"RH-R-3-CX6300-13","RHS|R4":"RH-R-3-CX6300-13","RHS|R5":"RH-R-3-CX6300-13","RHS|R6":"RH-R-3-CX6300-13","RHS|R7":"RH-R-8-CX6300-14","RHS|R8":"RH-R-8-CX6300-14","RHS|R9":"RH-R-8-CX6300-14","RHS|R10":"RH-R-8-CX6300-14","RHS|R11":"RH-R-12-CX6300-15","RHS|R12":"RH-R-12-CX6300-15","RHS|R13":"RH-R-12-CX6300-15","RHS|R14":"RH-R-12-CX6300-15","RHS|R15":"RH-R-16-CX6300-16","RHS|R16":"RH-R-16-CX6300-16","RHS|R17":"RH-R-16-CX6300-16","RHS|R18":"RH-R-16-CX6300-16","RHS|R19":"RH-R-20-CX6300-17","RHS|R20":"RH-R-20-CX6300-17","RHS|R21":"RH-R-20-CX6300-17","RHS|R22":"RH-R-20-CX6300-17","RHS|R23":"RH-R-27-CX6300-18","RHS|R24":"RH-R-27-CX6300-18","RHS|R25":"RH-R-27-CX6300-18","RHS|R26":"RH-R-27-CX6300-18","RHS|R27":"RH-R-27-CX6300-18","RHS|R28":"RH-R-27-CX6300-18","RHS|R29":"RH-R-29-CX6300-19","RHS|V40":"RH-V-43-CX6300-27","RHS|V41":"RH-V-43-CX6300-27","RHS|V42":"RH-V-43-CX6300-27","RHS|V43":"RH-V-43-CX6300-27","RHS|V44":"RH-V-43-CX6300-27","RHS|V45":"RH-V-Annex-CX6300-3","RHS|V46":"RH-V-Annex-CX6300-3","RHS|V48":"RH-V-49-CX6300-29","RHS|V49":"RH-V-49-CX6300-29","RHS|V50":"RH-V-49-CX6300-29","RHS|V51":"RH-V-51-CX6300M-21"},"facilities":[{"site":"RHS","name":"Stadium (facility 2)","priceTo":"Football","note":"Football / track stadium. Scoreboard, press box, ticket booth and score box. Switches RH-Football-TB-CX6100-32 (ticket booth), RH-Football-PB-CX6100-33 (press box). One exterior horn at the score box."},{"site":"RHS","name":"Varsity Softball (facility 1)","priceTo":"Football","note":"Scoreboard and any field-side camera or speaker."},{"site":"RHS","name":"Varsity Baseball (facility 3)","priceTo":"Football","note":"Scoreboard and any field-side camera or speaker."},{"site":"RHS","name":"Soccer (facility 4)","priceTo":"Football","note":"Any field-side scoreboard, camera or speaker."},{"site":"RHS","name":"JV Baseball (facility 5)","priceTo":"Football","note":"Scoreboard and any field-side camera or speaker."},{"site":"RHS","name":"Tennis (facility 6)","priceTo":"Football","note":"Any court-side camera or speaker."},{"site":"RHS","name":"JV Softball (facility 7)","priceTo":"Football","note":"Scoreboard and any field-side camera or speaker."},{"site":"RHS","name":"Aquatic Center (facility 8) / Pool","priceTo":"Pool","note":"Scoreboard, TIMING SYSTEM, and any deck camera or speaker. Serving switch RH-Pool-CX6200-31. Not shown on the January 2025 speaker count - VERIFY."},{"site":"RHS","name":"Field Maintenance (FM) and Field Storage (FS)","priceTo":"FM","note":"Field office carries one interior speaker and one exterior horn. Serving switch RH-FM-CX6300-20."},{"site":"RES","name":"Playground and hard courts","priceTo":"J","note":"Exterior horn coverage from the G wing and the Gym. No scoreboard on the 2023 site plan - VERIFY IN FIELD."},{"site":"RES","name":"Field (east of the Gym)","priceTo":"J","note":"Gym exterior horns SPK-Out-J-W, -J-E and -J-N provide field coverage."}],"enums":{"walkStatus":["Not visited","Partial","Visited","Follow-up needed"],"areaType":["Classroom","Computer lab","Office","Common area","Outdoor device","Athletic facility","Other"],"countBasis":["Measured / counted","Estimated","Unverified"],"ceilingType":["T-bar","Hard lid","Exposed","Mixed","Exterior","Unknown"],"removalDifficulty":["Low","Medium","High","Unknown"],"pathwayType":["Conduit","Raceway","J-hooks","Tray","Mixed","Underground","Unknown"],"yesNoVerify":["Yes","No","Verify"],"priority":["High","Medium","Low"],"qStatus":["Open","Submitted","Answered - review","Closed"],"viewType":["Identifier","Overview","Rack front","Rack rear","Fiber","Pathway","Outlet","Device","Problem","Other"],"accessEquip":["Ladder","Step stool","Scissor lift","Boom lift","Scaffold","None needed","Unknown"],"interfaceType":["Ethernet / PoE","Coax","Multi-conductor / proprietary","Fiber (out of scope)","Unknown - must ask"],"rackType":["2-post","4-post","Wall cabinet","Shelf","None","Unknown"],"routeBlockReason":["No ceiling access","Route blocked / not visible","No time","Closet locked","Needs lift","Other"]},"columns":{"Areas":["Record ID","Site","Building","Room / area","Area type","Serving closet ID","New AP / ceiling drops","New wall drops","New speaker drops","Total new drops","New other drops","Existing drops to remove","Route length per cable (ft)","Loops / dressing per cable (ft)","Cable subtotal (ft)","Count basis","Ceiling type","Working height (ft)","Access equipment","Pathway / route ID","Removal difficulty","Cutover / outage needs","Photo IDs","Question IDs","Notes / unusual conditions"],"Closets":["Closet ID","Site","Building / location","Room","Buildings served","Switch IDs","Existing rack / cabinet","Width (in)","Height (in)","Depth (in)","Usable RU","Existing ports","New ports needed","New cabinet needed","Proposed cabinet / rack","24-port panels needed","Horizontal managers","Vertical managers","Cable entry / congestion","Fiber assembly / move impact","Power / outlets","Grounding / bonding","Clearance / access","Outage / cutover needs","Photo IDs","Question IDs","Notes"],"Pathways":["Route ID","Site","Building","From closet / area","To rooms / devices","Pathway type","Route length (ft)","Vertical rise (ft)","Conduit / sleeve size (in)","Existing fill / capacity","Supports / spacing","Ceiling / access","Working height (ft)","Lift type / access restrictions","Penetrations / firestop","New pathway needed","Restoration / finish work","Removal conditions","Can old and new coexist?","Photo IDs","Question IDs","Notes"],"Questions":["Question ID","Site","Building","Room / closet / route","Topic","Question to submit","Priority","Status","Field note / verbal observation","Published answer","Addendum / section reference","Submitted date","Follow-up / cost impact"],"Photos":["Photo ID / filename","Site","Building","Room / closet / route","View type","Description / what it proves","Related record ID","Question ID","File link / folder","Notes"]},"standard":{"ceiling":4,"wall":6,"speaker":2,"other":0,"loops":10},"walk":{"date":"Saturday, October 10, 2026","start":"7:30 AM","first":"Rocklin High School, 5301 Victory Lane - meet at the MAIN OFFICE","second":"Rocklin Elementary School, 5025 Meyers Street","contact":"Valeriy Gavelovskiy, (916) 407-7106","company":"Moore Enterprises","email":"ts.rfp@rocklinusd.org","subject":"RFP 26-110 Questions","qDeadline":"Thursday, October 23, 2026, 3:00 PM","qTarget":"Monday, October 12, 2026","bidDue":"Wednesday, December 9, 2026, before 4:00 PM"}};
 
-  function g(k){ try{ return localStorage.getItem(k); }catch(e){ lastErr=e.name+": "+e.message; storageOk=false; return null; } }
-  function s(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ lastErr=e.name+": "+e.message; storageOk=false; return false; } }
-
-  // --- alternating double-buffer write with read-back verification ---
-  function save(st){
-    if(!storageOk) return false;
-    var meta={}; try{ meta=JSON.parse(g(KM)||"{}")||{}; }catch(e){ meta={}; }
-    var target = (meta.newest==="a") ? "b" : "a";
-    var key = (target==="a") ? KA : KB;
-    var body = JSON.stringify(st);
-    if(!s(key, body)) return false;
-    if(g(key) !== body){ storageOk=false; lastErr="read-back mismatch"; return false; }
-    s(KM, JSON.stringify({newest:target, seq:(meta.seq||0)+1, savedAt:new Date().toISOString()}));
-    return true;
-  }
-  function load(){
-    var meta={}; try{ meta=JSON.parse(g(KM)||"{}")||{}; }catch(e){}
-    var order = meta.newest==="b" ? [KB,KA] : [KA,KB];
-    for(var i=0;i<order.length;i++){
-      var r=g(order[i]); if(!r) continue;
-      try{ return {st:JSON.parse(r), meta:meta, from:order[i]}; }catch(e){}
+/* ------------------------------------------------------------------
+   0. RAW RESCUE ROUTE. Runs before anything else can throw.
+   ------------------------------------------------------------------ */
+(function rawRoute(){
+  if (location.hash !== "#raw") return;
+  var out = "=== FIELD WALK RAW STORAGE DUMP ===\n" + new Date().toString() + "\n\n";
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      out += "----- " + k + " -----\n" + localStorage.getItem(k) + "\n\n";
     }
-    return {st:{n:0,txt:"",notes:[]}, meta:meta, from:"(fresh)"};
-  }
-
-  var L=load(), state=L.st, loadedFrom=L.from;
-  if(!state.notes) state.notes=[];
-
-  var $=function(id){ return document.getElementById(id); };
-  var timer=null;
-  function queue(){ clearTimeout(timer); timer=setTimeout(flush,300); }
-  function flush(){ clearTimeout(timer); save(state); paint(); }
-
-  function paint(){
-    $("count").textContent=state.n;
-    var meta={}; try{ meta=JSON.parse(g(KM)||"{}")||{}; }catch(e){}
-    $("stamp").textContent = meta.savedAt
-      ? ("saved "+new Date(meta.savedAt).toLocaleTimeString()+"  ·  write #"+(meta.seq||0)+"  ·  buffer "+(meta.newest||"?"))
-      : "not saved yet";
-    $("banner").innerHTML = storageOk ? "" :
-      '<div class="banner">STORAGE FAILED — data is in memory only. Copy it out now.<br>'+
-      '<span style="font-weight:400;font-size:14px">'+esc(lastErr)+'</span></div>';
-
-    var sw = ("serviceWorker" in navigator);
-    var reg = sw && navigator.serviceWorker.controller;
-    var standalone = (window.navigator.standalone===true) ||
-                     (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
-    var rows=[
-      [storageOk, "localStorage readable and writable"],
-      [loadedFrom!=="(fresh)", "loaded from "+loadedFrom],
-      [sw, "service worker supported"],
-      [!!reg, reg ? "service worker ACTIVE — offline launch should work"
-                  : "service worker not yet controlling — reload once while online"],
-      [standalone, standalone ? "running standalone (Home Screen icon)"
-                              : "running in a Safari tab, not the icon"],
-      [navigator.onLine===false || navigator.onLine===true, "network: "+(navigator.onLine?"online":"OFFLINE")],
-      [!!(navigator.clipboard&&navigator.clipboard.writeText), "clipboard API available"],
-      [!!navigator.share, "share sheet available"]
-    ];
-    $("diag").innerHTML = rows.map(function(r){
-      return '<div class="chk"><span class="'+(r[0]?"ok":"bad")+'">'+(r[0]?"✓":"✕")+
-             '</span><span>'+esc(r[1])+'</span></div>';
-    }).join("");
-  }
-  function esc(t){ return String(t).replace(/[&<>"]/g,function(c){
-    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
-
-  function payload(){
-    return "=== FIELD WALK STORAGE TEST ===\n"+
-           "when   : "+new Date().toString()+"\n"+
-           "counter: "+state.n+"\n"+
-           "text   : "+state.txt+"\n"+
-           "notes  : "+state.notes.length+"\n"+
-           state.notes.map(function(x){return "  - "+x;}).join("\n")+"\n"+
-           "loaded : "+loadedFrom+"\n"+
-           "meta   : "+(g(KM)||"(none)")+"\n"+
-           "storage: "+(storageOk?"OK":"FAILED — "+lastErr)+"\n"+
-           "ua     : "+navigator.userAgent+"\n"+
-           "--- RAW ---\n"+JSON.stringify(state,null,1)+"\n";
-  }
-
-  $("bump").addEventListener("click", function(){ state.n++; flush(); });
-  $("note").addEventListener("click", function(){
-    state.notes.push(new Date().toLocaleTimeString()+" note "+(state.notes.length+1)); flush(); });
-  $("txt").value = state.txt||"";
-  $("txt").addEventListener("input", function(){ state.txt=this.value; queue(); });
-
-  // Build the string synchronously inside the gesture, then write. An await
-  // before writeText loses user activation and the copy fails silently.
-  $("copy").addEventListener("click", function(){
-    var t=payload(), done=false;
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      try{ navigator.clipboard.writeText(t); done=true; }catch(e){}
-    }
-    var ta=$("dump"); ta.value=t; ta.style.display="block"; ta.select();
-    if(!done){ try{ document.execCommand("copy"); }catch(e){} }
-    this.textContent = done ? "Copied ✓" : "Select the text below ↓";
-  });
-  $("raw").addEventListener("click", function(){
-    var ta=$("dump"); ta.value=payload(); ta.style.display="block"; ta.select(); });
-
-  // Flush on every way iOS can take the page away. Timers are throttled in
-  // Low Power Mode and beforeunload is unreliable here.
-  ["pagehide","blur"].forEach(function(ev){ window.addEventListener(ev, flush); });
-  document.addEventListener("visibilitychange", function(){
-    if(document.visibilityState==="hidden") flush(); });
-
-  if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("sw.js").then(function(){ setTimeout(paint,600); })
-      .catch(function(e){ lastErr="SW: "+e.message; paint(); });
-  }
-  paint();
+  } catch (e) { out += "!! localStorage threw: " + e.name + " " + e.message + "\n"; }
+  document.body.innerHTML =
+    '<div style="padding:12px;font:14px -apple-system,Arial">' +
+    '<b>Raw storage dump.</b> Select all and email it to yourself. ' +
+    '<a href="#">Back to app</a> (then reload).' +
+    '<textarea readonly style="width:100%;min-height:70vh;font:11px ui-monospace,Menlo,monospace;' +
+    '-webkit-user-select:text;margin-top:8px"></textarea></div>';
+  var ta = document.querySelector("textarea");
+  ta.value = out; ta.select();
+  throw new Error("raw-route");   // stop the rest of the app booting
 })();
+
+/* ------------------------------------------------------------------
+   1. STORAGE: alternating double buffer + read-back verification.
+   ------------------------------------------------------------------ */
+var KA = "rk26110.v1.a", KB = "rk26110.v1.b", KM = "rk26110.v1.meta",
+    KJ = "rk26110.v1.journal";
+var storageOk = true, storageErr = "", meta = {newest:null, seq:0, savedAt:null};
+
+function lsGet(k){ try { return localStorage.getItem(k); }
+  catch(e){ storageOk=false; storageErr=e.name+": "+e.message; return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k,v); return true; }
+  catch(e){ storageOk=false; storageErr=e.name+": "+e.message; return false; } }
+function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
+
+function readMeta(){
+  try { var m = JSON.parse(lsGet(KM)||"null"); if (m && typeof m==="object") return m; }
+  catch(e){}
+  return {newest:null, seq:0, savedAt:null};
+}
+
+var S = null, bootNote = "";
+
+function loadState(){
+  meta = readMeta();
+  var order = meta.newest === "b" ? [KB,KA] : [KA,KB];
+  for (var i=0;i<order.length;i++){
+    var raw = lsGet(order[i]);
+    if (!raw) continue;
+    try {
+      var st = JSON.parse(raw);
+      if (st && st.v === 1) {
+        if (i === 1) bootNote = "Recovered from the backup buffer — the newer write was unreadable.";
+        return st;
+      }
+    } catch(e){}
+  }
+  if (lsGet(KA) || lsGet(KB)) {
+    bootNote = "BOTH saved copies failed to parse. Open #raw and email the text before entering anything.";
+  }
+  return null;
+}
+
+function freshState(){
+  return {v:1, device:null, seq:{a:0,c:0,p:0,q:13,ph:0},
+          areas:{}, closets:{}, paths:{}, facs:{}, qs:{}, photos:{},
+          bstat:{}, lastArea:null, checkpointAt:null};
+}
+
+function persist(){
+  if (!storageOk) return false;
+  var target = meta.newest === "a" ? "b" : "a";
+  var key = target === "a" ? KA : KB;
+  var body;
+  try { body = JSON.stringify(S); } catch(e){ storageOk=false; storageErr="serialize: "+e.message; return false; }
+  if (!lsSet(key, body)) {                       // quota? shed the journal, retry once
+    lsDel(KJ);
+    if (!lsSet(key, body)) return false;
+    storageOk = true;
+  }
+  if (lsGet(key) !== body) { storageOk=false; storageErr="read-back mismatch"; return false; }
+  meta = {newest:target, seq:(meta.seq||0)+1, savedAt:new Date().toISOString()};
+  lsSet(KM, JSON.stringify(meta));
+  return true;
+}
+
+/* append-only field-level journal — hand-reconstructable if state ever dies */
+function journal(kind, id, field, val){
+  if (!storageOk) return;
+  try {
+    var j = lsGet(KJ) || "";
+    var line = hhmmss() + "|" + kind + "|" + id + "|" + field + "|" +
+               String(val === undefined ? "" : val).slice(0,60).replace(/[|\n\r]/g," ");
+    var lines = (j ? j.split("\n") : []);
+    lines.push(line);
+    if (lines.length > 400) lines = lines.slice(-400);
+    lsSet(KJ, lines.join("\n"));
+  } catch(e){}
+}
+
+var saveTimer = null;
+function queueSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 300); }
+function flushSave(){ clearTimeout(saveTimer); persist(); paintChrome(); }
+
+["pagehide","blur"].forEach(function(ev){ window.addEventListener(ev, flushSave); });
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState === "hidden") flushSave();
+});
+
+/* ------------------------------------------------------------------
+   2. helpers
+   ------------------------------------------------------------------ */
+function $(id){ return document.getElementById(id); }
+function esc(t){ return String(t==null?"":t).replace(/[&<>"']/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function pad2(n){ return (n<10?"0":"")+n; }
+function hhmmss(){ var d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes())+":"+pad2(d.getSeconds()); }
+function hhmm(){ var d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
+function bkey(site,b){ return site+"|"+b; }
+function bld(site,b){
+  for (var i=0;i<DATA.buildings.length;i++){
+    var x=DATA.buildings[i];
+    if (x.site===site && x.b===b) return x;
+  } return null;
+}
+function vals(o){ var r=[]; for (var k in o) if (o.hasOwnProperty(k)) r.push(o[k]); return r; }
+function nextSeq(which){ S.seq[which] = (S.seq[which]||0)+1; return S.seq[which]; }
+function devCode(){ return S.device || "T"; }
+
+/* ------------------------------------------------------------------
+   3. router
+   ------------------------------------------------------------------ */
+var NAV = {screen:"sites", site:null, b:null, tab:"rooms", rec:null, kind:null};
+var stack = [];
+
+function go(next, push){
+  if (push !== false) stack.push(JSON.parse(JSON.stringify(NAV)));
+  NAV = next;
+  render();
+}
+function back(){
+  if (!stack.length) { NAV = {screen:"sites"}; }
+  else NAV = stack.pop();
+  render();
+}
+$("back").addEventListener("click", back);
+
+/* ------------------------------------------------------------------
+   4. progress model
+   ------------------------------------------------------------------ */
+function areasOf(site,b){
+  return vals(S.areas).filter(function(a){ return a.site===site && a.b===b && a.touched; });
+}
+function closetsOf(site,b){
+  return vals(S.closets).filter(function(c){ return c.site===site && c.b===b; });
+}
+function facsOf(site,b){
+  return vals(S.facs).filter(function(f){ return f.site===site && f.priceTo===b; });
+}
+function pathsOf(site,b){
+  return vals(S.paths).filter(function(p){ return p.site===site && p.b===b; });
+}
+function recCount(site,b){
+  return areasOf(site,b).length + closetsOf(site,b).length +
+         facsOf(site,b).length + pathsOf(site,b).length;
+}
+function bStatus(site,b){
+  var def = bld(site,b);
+  var ar = areasOf(site,b), cl = closetsOf(site,b);
+  if (recCount(site,b) === 0) return "zero";
+  var wantRooms = def.classrooms.length;
+  var haveRooms = ar.filter(function(a){ return a.kindRoom; }).length;
+  var allLen = ar.every(function(a){ return a.routeFt !== null || a.cne; });
+  var needCl = def.switches.length > 0;
+  if (haveRooms >= wantRooms && allLen && (!needCl || cl.length > 0)) return "done";
+  return "part";
+}
+function siteTotals(site){
+  var bs = DATA.buildings.filter(function(x){ return x.site===site; });
+  var zero=0, part=0, done=0, ar=0, dr=0, ft=0, cl=0, fa=0, cne=0;
+  bs.forEach(function(x){
+    var st = bStatus(site,x.b);
+    if (st==="zero") zero++; else if (st==="part") part++; else done++;
+    var a = areasOf(site,x.b);
+    ar += a.length; cl += closetsOf(site,x.b).length; fa += facsOf(site,x.b).length;
+    a.forEach(function(r){
+      dr += totNew(r);
+      ft += sub(r) || 0;
+      if (r.cne) cne++;
+    });
+  });
+  return {lines:bs.length, zero:zero, part:part, done:done, areas:ar, drops:dr,
+          ft:ft, closets:cl, facs:fa, cne:cne};
+}
+function totNew(r){ return (r.clg||0)+(r.wall||0)+(r.spk||0)+(r.oth||0); }
+function sub(r){
+  if (r.routeFt === null || r.routeFt === undefined) return null;
+  var t = totNew(r); if (!t) return null;
+  return t * (r.routeFt + (r.loops||0));
+}
+
+/* ------------------------------------------------------------------
+   5. chrome
+   ------------------------------------------------------------------ */
+function paintChrome(){
+  $("dot").className = "dot" + (storageOk ? "" : " bad");
+  var bs = [];
+  if (!storageOk) bs.push('<div class="banner">STORAGE FAILED — DATA IS IN MEMORY ONLY.'+
+    '<small>Copy out after every room: tap Export, then Show raw text. '+esc(storageErr)+'</small></div>');
+  if (bootNote) bs.push('<div class="banner">'+esc(bootNote)+'</div>');
+  if (NAV.screen === "bldgs" && NAV.site) {
+    var t = siteTotals(NAV.site);
+    if (t.zero > 0) bs.push('<div class="banner zero">'+t.zero+' of '+t.lines+
+      ' '+NAV.site+' buildings still have ZERO records'+
+      '<small>A blank Appendix B line reads as NO BID. Breadth before depth.</small></div>');
+  }
+  $("banners").innerHTML = bs.join("");
+
+  var f = "";
+  if (S && S.device) {
+    var a = siteTotals("RHS"), b = siteTotals("RES");
+    f = "<b>"+(a.areas+b.areas)+"</b> areas · <b>"+(a.closets+b.closets)+"</b> closets · <b>"+
+        (a.drops+b.drops)+"</b> new drops<br>device "+devCode()+" · "+
+        (meta.savedAt ? "saved "+new Date(meta.savedAt).toTimeString().slice(0,8) : "not saved") +
+        (storageOk ? "" : " · SAVE FAILING");
+  }
+  $("foot").innerHTML = f || "&nbsp;";
+  $("back").className = "back" + (stack.length ? "" : " hidden");
+}
+
+/* ------------------------------------------------------------------
+   6. screens
+   ------------------------------------------------------------------ */
+function render(){
+  var v = $("view");
+  $("savebar").className = "save hidden";
+  $("savebar").innerHTML = "";
+  var fn = ({
+    device: scDevice, sites: scSites, bldgs: scBldgs, bldg: scBldg,
+    area: scArea, closet: scCloset, fac: scFac, q: scQ,
+    exportv: scExport, missing: scMissing
+  })[NAV.screen] || scSites;
+  fn(v);
+  paintChrome();
+  window.scrollTo(0,0);
+}
+
+function head(title, sub){
+  $("ttl").innerHTML = esc(title) + (sub ? "<small>"+esc(sub)+"</small>" : "");
+}
+
+/* --- first run: pick the device letter, then lock it --- */
+function scDevice(v){
+  head("Field Walk", "first run");
+  v.innerHTML =
+    '<div class="note"><b>Which device is this?</b> The letter is stamped into every '+
+    'record ID so two devices can never collide. It is asked once and then locked.</div>'+
+    '<button class="ex-btn pri" data-d="T">This is the <u>iPad</u> &nbsp;(T)</button>'+
+    '<button class="ex-btn" data-d="P">This is the <u>iPhone</u> &nbsp;(P)</button>'+
+    '<div class="note">Plan: the <b>iPad captures everything</b>; the iPhone stays on '+
+    'camera and voice duty so the app is never backgrounded. Pick <b>iPad</b> unless '+
+    'this really is the phone.</div>';
+  Array.prototype.forEach.call(v.querySelectorAll("[data-d]"), function(btn){
+    btn.addEventListener("click", function(){
+      S.device = btn.getAttribute("data-d");
+      flushSave();
+      NAV = {screen:"sites"}; stack = []; render();
+    });
+  });
+}
+
+function scSites(v){
+  head("Field Walk", DATA.walk.date);
+  var html = "";
+  ["RHS","RES"].forEach(function(s){
+    var t = siteTotals(s), si = DATA.sites[s];
+    var cls = t.zero === t.lines ? "zero" : (t.zero ? "part" : "done");
+    html += '<button class="tile '+cls+'" data-s="'+s+'" style="margin-bottom:9px">'+
+      '<div class="b">'+s+'</div>'+
+      '<div class="d">'+esc(si.name)+'<br>'+esc(si.addr)+'</div>'+
+      '<div class="m"><span>'+t.lines+' bid lines</span><span>'+si.rooms+' ref rooms</span></div>'+
+      '<div class="m" style="margin-top:4px"><span>'+t.done+' done</span>'+
+      '<span>'+t.part+' partial</span><span style="color:var(--bad)">'+t.zero+' ZERO</span></div>'+
+      (t.zero ? '<span class="pri">'+t.zero+' BUILDINGS NOT STARTED</span>' : '')+
+      '</button>';
+  });
+  html += '<div class="note"><b>Walk order.</b> '+esc(DATA.walk.first)+' at '+
+    esc(DATA.walk.start)+', about 4 hours. Then '+esc(DATA.walk.second)+'. '+
+    '<b>Sign in at both sites.</b></div>'+
+    '<div class="note flag"><b>The counting rule</b><br>'+
+    'existing to replace + additional required = <b>total new CAT6A to install</b>. '+
+    'A replacement still consumes a new cable. Removals are demolition labour only — '+
+    'they never reduce the install count.</div>';
+  v.innerHTML = html;
+  Array.prototype.forEach.call(v.querySelectorAll("[data-s]"), function(btn){
+    btn.addEventListener("click", function(){
+      go({screen:"bldgs", site:btn.getAttribute("data-s")});
+    });
+  });
+}
+
+function scBldgs(v){
+  var site = NAV.site;
+  head(DATA.sites[site].name, site + " · tap a building");
+  var bs = DATA.buildings.filter(function(x){ return x.site===site; });
+  // zero-record buildings first, then partial, then done
+  var rank = {zero:0, part:1, done:2};
+  bs = bs.slice().sort(function(a,b){
+    var d = rank[bStatus(site,a.b)] - rank[bStatus(site,b.b)];
+    return d !== 0 ? d : 0;
+  });
+  var html = '<div class="grid">';
+  bs.forEach(function(x){
+    var st = bStatus(site,x.b);
+    var a = areasOf(site,x.b), c = closetsOf(site,x.b);
+    var conflict = x.extraA !== x.extraB;
+    html += '<button class="tile '+st+'" data-b="'+esc(x.b)+'">'+
+      '<div class="b">'+esc(x.b)+'</div>'+
+      '<div class="d">'+esc(x.desc)+'</div>'+
+      '<div class="m"><span>rooms '+a.filter(function(r){return r.kindRoom;}).length+
+        '/'+x.classrooms.length+'</span>'+
+      '<span>closets '+c.length+'/'+(x.switches.length||0)+'</span></div>'+
+      '<div class="m" style="margin-top:3px;color:var(--mut);font-weight:400">'+
+        'max '+(x.maxLen?x.maxLen+' ft':'—')+' · extra '+x.extraB+'</div>'+
+      (st==="zero" ? '<span class="pri">PRIORITY — NOT STARTED</span>' : '')+
+      (conflict ? '<div class="fl">&#9888; extra runs '+x.extraB+' vs '+x.extraA+'</div>' : '')+
+      '</button>';
+  });
+  html += '</div>';
+  v.innerHTML = html;
+  Array.prototype.forEach.call(v.querySelectorAll("[data-b]"), function(btn){
+    btn.addEventListener("click", function(){
+      go({screen:"bldg", site:site, b:btn.getAttribute("data-b"), tab:"rooms"});
+    });
+  });
+}
+
+function scBldg(v){
+  var site = NAV.site, b = NAV.b, def = bld(site,b);
+  head(site + " · Building " + b, def.desc);
+  var tabs = [["rooms","Rooms"],["closets","Closets"],["facs","Athletics"],
+              ["paths","Pathways"],["qs","Questions"]];
+  var html = '<div class="chips" style="margin-bottom:12px">';
+  tabs.forEach(function(t){
+    html += '<button class="chip sm'+(NAV.tab===t[0]?" on":"")+'" data-t="'+t[0]+'">'+t[1]+'</button>';
+  });
+  html += '</div>';
+
+  if (def.flags.length) {
+    html += '<div class="note flag"><b>Settle in the field</b><ul>' +
+      def.flags.map(function(f){ return "<li>"+esc(f)+"</li>"; }).join("") + '</ul></div>';
+  }
+  html += '<div class="note">District reference — <b>not</b> a basis of bid: '+
+    def.rooms+' rooms · '+def.clsDrops+' classroom drops · extra runs <b>'+def.extraB+
+    '</b> (Appendix B)'+(def.extraA!==def.extraB?' vs <b>'+def.extraA+'</b> (Appendix A) — count it yourself':'')+
+    ' · max run '+(def.maxLen?def.maxLen+' ft':'none given')+
+    (def.switches.length?' · switches '+esc(def.switches.join(", ")):' · no switch shown')+'</div>';
+
+  if (NAV.tab === "rooms")   html += listRooms(site,b,def);
+  if (NAV.tab === "closets") html += listClosets(site,b,def);
+  if (NAV.tab === "facs")    html += listFacs(site,b);
+  if (NAV.tab === "paths")   html += listPaths(site,b);
+  if (NAV.tab === "qs")      html += listQs(site,b);
+
+  v.innerHTML = html;
+  Array.prototype.forEach.call(v.querySelectorAll("[data-t]"), function(btn){
+    btn.addEventListener("click", function(){
+      NAV.tab = btn.getAttribute("data-t"); render();
+    });
+  });
+  wireList(site,b,def);
+}
+
+/* --- rooms tab ------------------------------------------------- */
+function listRooms(site,b,def){
+  var html = "";
+  var stubs = def.classrooms.map(function(r){ return [r,true]; })
+      .concat(def.spaces.map(function(r){ return [r,false]; }));
+  var recs = vals(S.areas).filter(function(a){ return a.site===site && a.b===b; });
+  var byName = {};
+  recs.forEach(function(r){ byName[r.room] = r; });
+
+  stubs.forEach(function(p){
+    var name = p[0], isRoom = p[1], r = byName[name];
+    var on = r && r.touched;
+    html += '<button class="row'+(on?" on":"")+'" data-room="'+esc(name)+'" data-isroom="'+
+      (isRoom?1:0)+'">'+
+      '<span class="tick">'+(on?"&#10003;":"&#9744;")+'</span>'+
+      '<span class="rl">'+esc(name)+
+        (isRoom?"":'<small>non-classroom space</small>')+
+        (on&&r.cne?'<small style="color:var(--warn)">route not established</small>':'')+
+      '</span>'+
+      '<span class="rr">'+(on ? totNew(r)+" new"+(r.routeFt!==null?" · "+r.routeFt+" ft":"")
+                              : "")+'</span></button>';
+  });
+  // ad-hoc rooms the documents do not know about
+  recs.forEach(function(r){
+    var known = stubs.some(function(p){ return p[0]===r.room; });
+    if (known || !r.touched) return;
+    html += '<button class="row on" data-room="'+esc(r.room)+'" data-isroom="1">'+
+      '<span class="tick">&#10003;</span><span class="rl">'+esc(r.room)+
+      '<small style="color:var(--bad)">not in the reference list</small></span>'+
+      '<span class="rr">'+totNew(r)+' new</span></button>';
+  });
+  html += '<button class="ex-btn" id="addroom" style="margin-top:12px">+ Room / space not listed</button>';
+  if (S.lastArea && S.areas[S.lastArea] && S.areas[S.lastArea].b === b) {
+    html += '<div class="note">Tip: open a room and use <b>Same as last</b> to clone the '+
+      'previous record. That is how 30 relocatables take eight minutes.</div>';
+  }
+  return html;
+}
+
+function wireList(site,b,def){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-room]"), function(btn){
+    btn.addEventListener("click", function(){
+      go({screen:"area", site:site, b:b, room:btn.getAttribute("data-room"),
+          isRoom: btn.getAttribute("data-isroom")==="1"});
+    });
+  });
+  var ar = $("addroom");
+  if (ar) ar.addEventListener("click", function(){
+    var n = prompt("Room or space name (as it is signed on the door):");
+    if (n && n.trim()) go({screen:"area", site:site, b:b, room:n.trim(), isRoom:true, adhoc:true});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-cl]"), function(btn){
+    btn.addEventListener("click", function(){
+      go({screen:"closet", site:site, b:b, id:btn.getAttribute("data-cl")||null});
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-fac]"), function(btn){
+    btn.addEventListener("click", function(){
+      go({screen:"fac", site:site, b:b, fac:btn.getAttribute("data-fac"),
+          id:btn.getAttribute("data-fid")||null});
+    });
+  });
+  var ap = $("addpath");
+  if (ap) ap.addEventListener("click", function(){
+    go({screen:"area", site:site, b:b, room:"", isRoom:false, pathOnly:true});
+  });
+  var aq = $("addq");
+  if (aq) aq.addEventListener("click", function(){ go({screen:"q", site:site, b:b}); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-q]"), function(btn){
+    btn.addEventListener("click", function(){
+      go({screen:"q", site:site, b:b, id:btn.getAttribute("data-q")});
+    });
+  });
+}
+
+/* --- closets tab ----------------------------------------------- */
+function listClosets(site,b,def){
+  var recs = closetsOf(site,b);
+  var covered = {};
+  recs.forEach(function(c){ (c.switches||[]).forEach(function(s){ covered[s]=c.id; }); });
+  var html = '<div class="note">One record per <b>physical closet</b>. If two switches '+
+    'share a cabinet, tick them both into the same record — it changes the cabinet and '+
+    'patch-panel count. <b>Fiber is out of scope: record it and protect it.</b></div>';
+  def.switches.forEach(function(sw){
+    var cid = covered[sw];
+    html += '<button class="row'+(cid?" on":"")+'" data-cl="'+esc(cid||"")+'">'+
+      '<span class="tick">'+(cid?"&#10003;":"&#9744;")+'</span>'+
+      '<span class="rl" style="font-size:14px">'+esc(sw)+
+      (cid?'<small>in record '+esc(cid)+'</small>':'')+'</span></button>';
+  });
+  if (!def.switches.length) html += '<div class="note">No switch listed for this building '+
+    'in the District documents. If you find a closet here, add it.</div>';
+  recs.forEach(function(c){
+    if ((c.switches||[]).length) return;
+    html += '<button class="row on" data-cl="'+esc(c.id)+'"><span class="tick">&#10003;</span>'+
+      '<span class="rl">'+esc(c.id)+'<small>no switch assigned</small></span></button>';
+  });
+  html += '<button class="ex-btn" data-cl="" style="margin-top:12px">+ New closet record</button>';
+  return html;
+}
+
+/* --- athletics tab --------------------------------------------- */
+function listFacs(site,b){
+  var mine = DATA.facilities.filter(function(f){ return f.site===site && f.priceTo===b; });
+  var recs = facsOf(site,b);
+  var html = "";
+  if (!mine.length && !recs.length) {
+    html += '<div class="note">No athletic facility prices to building <b>'+esc(b)+
+      '</b>. Appendix B puts athletic equipment on the <b>Football</b>, <b>Pool</b> and '+
+      '<b>FM</b> lines at RHS.</div>';
+  } else {
+    html += '<div class="note flag"><b>The District has not inventoried these.</b> '+
+      'Establish quantities yourself. The decisive field is <b>interface type</b> — '+
+      '"replace the cabling" means something different for a scoreboard on a '+
+      'proprietary harness than for a PoE camera.</div>';
+  }
+  mine.forEach(function(f){
+    var got = recs.filter(function(r){ return r.fac===f.name; });
+    html += '<button class="row'+(got.length?" on":"")+'" data-fac="'+esc(f.name)+'">'+
+      '<span class="tick">'+(got.length?"&#10003;":"&#9744;")+'</span>'+
+      '<span class="rl" style="font-size:15px">'+esc(f.name)+
+      '<small>'+esc(f.note.slice(0,96))+(f.note.length>96?"…":"")+'</small></span>'+
+      '<span class="rr">'+(got.length?got.length+" rec":"")+'</span></button>';
+  });
+  recs.forEach(function(r){
+    html += '<button class="row on" data-fac="'+esc(r.fac)+'" data-fid="'+esc(r.id)+'">'+
+      '<span class="tick">&#8250;</span><span class="rl" style="font-size:14px">'+
+      esc(r.fac)+'<small>'+esc(r.equip||"(no equipment noted)")+' · '+
+      esc(r.iface||"interface not set")+'</small></span>'+
+      '<span class="rr">'+(r.newDrops||0)+' new</span></button>';
+  });
+  return html;
+}
+
+/* --- pathways / questions tabs --------------------------------- */
+function listPaths(site,b){
+  var recs = pathsOf(site,b);
+  var html = '<div class="note">Pathways are logged in the room records as a route ID '+
+    'plus a note, and reconstructed at the desk from photos. Use this only for a shared '+
+    'route worth its own row.</div>';
+  recs.forEach(function(p){
+    html += '<div class="row on"><span class="tick">&#10003;</span><span class="rl">'+
+      esc(p.id)+'<small>'+esc(p.type||"")+' · '+(p.ft||"?")+' ft</small></span></div>';
+  });
+  return html;
+}
+function listQs(site,b){
+  var recs = vals(S.qs).filter(function(q){ return q.site===site && q.b===b; });
+  var html = '<div class="note flag"><b>Verbal answers at the walk are not binding.</b> '+
+    'Addendum No. 3: no response is given by telephone or in conversation at the project '+
+    'walk. Ask verbally only to aim your eyes — then file it in writing. '+
+    'Send the first batch '+esc(DATA.walk.qTarget)+'.</div>';
+  recs.forEach(function(q){
+    html += '<button class="row on" data-q="'+esc(q.id)+'"><span class="tick">&#10003;</span>'+
+      '<span class="rl">'+esc(q.id)+'<small>'+esc((q.topic||"")+" — "+(q.text||"").slice(0,70))+
+      '</small></span></button>';
+  });
+  html += '<button class="ex-btn" id="addq" style="margin-top:12px">+ Raise a question</button>';
+  return html;
+}
+
+/* ------------------------------------------------------------------
+   7. AREA FORM — the ~20 second path
+   ------------------------------------------------------------------ */
+function areaId(site,b,room){
+  return site+"-"+b+"-"+String(room).replace(/[^A-Za-z0-9]/g,"")+"-"+devCode()+
+         pad2(nextSeq("a"));
+}
+function findArea(site,b,room){
+  var r = vals(S.areas).filter(function(a){ return a.site===site&&a.b===b&&a.room===room; });
+  return r.length ? r[0] : null;
+}
+
+function scArea(v){
+  var site=NAV.site, b=NAV.b, room=NAV.room, def=bld(site,b);
+  var r = findArea(site,b,room);
+  var isNew = !r;
+  if (!r) {
+    r = {id:areaId(site,b,room), site:site, b:b, room:room,
+         type: NAV.isRoom ? "Classroom" : "Common area",
+         closet: DATA.roomCloset[site+"|"+room] || (def.switches[0]||""),
+         clg:null, wall:null, spk:null, oth:0, remove:null,
+         routeFt:null, cne:null, loops:DATA.standard.loops,
+         basis:"Measured / counted", ceil:null, ht:null, acc:null,
+         rid:"", rdiff:null, cut:"", photoFrom:null, photoTo:null,
+         notes:"", touched:false};
+    S.areas[r.id] = r;
+  }
+  head(site+" "+b+" · "+room, r.id);
+
+  function set(k,val){ r[k]=val; r.touched=true; journal("areas",r.id,k,val); queueSave(); }
+
+  var std = DATA.standard;
+  var stdOn = r.clg===std.ceiling && r.wall===std.wall && r.spk===std.speaker;
+
+  var html = "";
+  if (def.flags.length && isNew) {
+    html += '<div class="note flag"><b>In this building</b><ul>'+
+      def.flags.map(function(f){return "<li>"+esc(f)+"</li>";}).join("")+'</ul></div>';
+  }
+
+  html += '<button class="big-ok'+(stdOn?" on":"")+'" id="std">'+
+    (stdOn ? "&#10003; 12-DROP STANDARD SET" : "&#10003; CONFIRM 12-DROP STANDARD")+
+    '<div style="font-size:12.5px;font-weight:600;margin-top:4px;opacity:.9">'+
+    '4 ceiling &middot; 6 wall &middot; 2 speaker &nbsp;=&nbsp; 12 new cables</div></button>';
+
+  if (S.lastArea && S.areas[S.lastArea] && S.lastArea !== r.id) {
+    html += '<button class="ex-btn" id="samelast" style="margin-top:8px">'+
+      'Same as last &nbsp;(' + esc(S.areas[S.lastArea].room) + ')</button>';
+  }
+
+  html += '<div class="sec">Identity</div>';
+  html += chipsFld("Area type","type",DATA.enums.areaType,r.type);
+  if (def.switches.length) {
+    html += chipsFld("Serving closet","closet",def.switches,r.closet);
+  }
+
+  /* ---- the two counting blocks ---- */
+  html += '<div class="sec">Counts</div>';
+  html += '<div class="block new"><h4>New CAT6A to install</h4>'+
+    '<div class="why">Includes every replacement. A replacement drop still consumes a '+
+    'new cable.</div>'+
+    stepper("AP / ceiling","clg",r.clg)+
+    stepper("Wall","wall",r.wall)+
+    stepper("IP speaker","spk",r.spk)+
+    stepper("Other (cameras, horns, devices)","oth",r.oth)+
+    '<div class="tot"><span>TOTAL NEW DROPS</span><span class="tv" id="totnew">'+
+    (r.clg===null&&r.wall===null&&r.spk===null&&!r.oth ? "—" : totNew(r))+'</span></div></div>';
+
+  html += '<div class="ruleline">existing to replace &nbsp;+&nbsp; additional required '+
+    '&nbsp;=&nbsp; total to install</div>';
+
+  html += '<div class="block rm"><h4>Existing cable to remove</h4>'+
+    '<div class="why">Demolition labour only. Does <b>not</b> reduce the install count above.</div>'+
+    stepper("Existing drops to remove","remove",r.remove)+
+    '<div class="chips" style="margin-top:6px">'+
+    '<button class="chip sm" data-rmq="same">Same as new</button>'+
+    '<button class="chip sm" data-rmq="0">None</button>'+
+    '<button class="chip sm" data-rmq="unk">Unknown</button></div></div>';
+
+  /* ---- route length ---- */
+  html += '<div class="sec">Route length — the money variable</div>';
+  html += '<div class="fld"><label>Route length PER CABLE (ft) — follow the actual route, '+
+    'never straight-line</label>'+
+    '<div class="kp-val'+(r.cne?" cne":"")+'" id="kpval">'+
+      (r.cne ? "ROUTE NOT ESTABLISHED<br>"+esc(r.cne)
+             : (r.routeFt===null?"—":r.routeFt))+'</div>'+
+    '<div class="kp" id="kp">'+
+      [1,2,3,4,5,6,7,8,9].map(function(n){return '<button data-k="'+n+'">'+n+'</button>';}).join("")+
+      '<button data-k="0" class="wide">0</button><button data-k="del">&#9003;</button>'+
+    '</div>'+
+    '<button class="cne-btn'+(r.cne?" on":"")+'" id="cne">&#9888; COULD NOT ESTABLISH ROUTE</button>'+
+    '<div id="cnereasons"></div>'+
+    (def.maxLen ? '<div class="hint">Appendix C worst-case run for this building: '+
+      def.maxLen+' ft.</div>' : '')+
+    '<div id="overmax"></div></div>';
+
+  html += chipsFld("Loops / dressing per cable (ft)","loops",[0,5,10,15,20],r.loops,
+    "Loops only. The District's 30% is a procurement waste allowance — added at the desk, not here.");
+
+  html += '<div class="sub-live'+(sub(r)===null?" none":"")+'" id="sublive">'+subText(r)+'</div>';
+
+  html += chipsFld("Count basis","basis",DATA.enums.countBasis,r.basis);
+
+  /* ---- photos ---- */
+  html += '<div class="sec">Photos</div>'+
+    '<div class="note">Shoot on the <b>iPhone</b>. Photograph a written marker first:<br>'+
+    '<b>'+esc(site+" | Building "+b+" | "+room+(r.closet?" | "+r.closet:""))+'</b><br>'+
+    'then overview &rarr; devices &rarr; pathways &rarr; problems. IDs get assigned at '+
+    'the desk from the time range.</div>'+
+    '<div class="chips"><button class="chip" id="phfrom">'+
+      (r.photoFrom?"From "+esc(r.photoFrom):"&#9654; Start "+hhmm())+'</button>'+
+    '<button class="chip" id="phto">'+
+      (r.photoTo?"To "+esc(r.photoTo):"&#9632; Stop")+'</button></div>';
+
+  /* ---- tier 2 ---- */
+  html += '<details class="t2"><summary>Details</summary><div class="in">'+
+    chipsFld("Ceiling type","ceil",DATA.enums.ceilingType,r.ceil)+
+    chipsFld("Working height (ft)","ht",[8,9,10,12,14,16,20,"24+"],r.ht)+
+    chipsFld("Access equipment","acc",DATA.enums.accessEquip,r.acc)+
+    chipsFld("Removal difficulty","rdiff",DATA.enums.removalDifficulty,r.rdiff)+
+    '<div class="fld"><label>Pathway / route ID</label>'+
+      '<input type="text" id="rid" value="'+esc(r.rid)+'" autocapitalize="off" '+
+      'autocorrect="off" spellcheck="false"></div>'+
+    '<div class="fld"><label>Cutover / outage needs</label>'+
+      '<input type="text" id="cut" value="'+esc(r.cut)+'"></div>'+
+    '</div></details>';
+
+  html += '<div class="fld"><label>Notes / unusual conditions</label>'+
+    '<textarea id="notes" autocapitalize="sentences">'+esc(r.notes)+'</textarea>'+
+    '<div class="hint">Dictate it — tap the mic on the keyboard.</div></div>';
+
+  v.innerHTML = html;
+
+  $("savebar").className = "save";
+  $("savebar").innerHTML = '<div class="two">'+
+    '<button class="alt" id="delrec">Delete</button>'+
+    '<button id="savenext">Save &amp; next &rsaquo;</button></div>';
+
+  /* ---- wiring ---- */
+  function repaintCounts(){
+    $("totnew").textContent = (r.clg===null&&r.wall===null&&r.spk===null&&!r.oth)
+      ? "—" : totNew(r);
+    var sl = $("sublive");
+    sl.textContent = subText(r);
+    sl.className = "sub-live" + (sub(r)===null ? " none" : "");
+    var om = $("overmax");
+    om.innerHTML = (def.maxLen && r.routeFt && r.routeFt > def.maxLen)
+      ? '<div class="overmax">&#9888; longer than Appendix C\'s '+def.maxLen+
+        ' ft worst case — confirm you followed the real route</div>' : "";
+  }
+  function repaintKp(){
+    var kv = $("kpval");
+    kv.className = "kp-val" + (r.cne ? " cne" : "");
+    kv.innerHTML = r.cne ? "ROUTE NOT ESTABLISHED<br>"+esc(r.cne)
+                         : (r.routeFt===null ? "—" : r.routeFt);
+    $("cne").className = "cne-btn" + (r.cne ? " on" : "");
+    repaintCounts();
+  }
+
+  $("std").addEventListener("click", function(){
+    set("clg",std.ceiling); set("wall",std.wall); set("spk",std.speaker);
+    if (r.oth===null) set("oth",0);
+    if (r.loops===null||r.loops===undefined) set("loops",std.loops);
+    if (!r.basis) set("basis","Estimated");
+    render();
+  });
+  var sl2 = $("samelast");
+  if (sl2) sl2.addEventListener("click", function(){
+    var p = S.areas[S.lastArea];
+    ["type","closet","clg","wall","spk","oth","remove","routeFt","cne","loops",
+     "basis","ceil","ht","acc","rdiff"].forEach(function(k){ r[k]=p[k]; });
+    r.touched = true; journal("areas",r.id,"sameAsLast",p.id); flushSave(); render();
+  });
+
+  wireChips(v, function(k,val){ set(k,val); if(k==="loops") repaintCounts(); });
+  wireSteppers(v, r, function(k,val){ set(k,val); repaintCounts(); });
+
+  Array.prototype.forEach.call(v.querySelectorAll("[data-rmq]"), function(btn){
+    btn.addEventListener("click", function(){
+      var m = btn.getAttribute("data-rmq");
+      if (m==="same") set("remove", totNew(r));
+      else if (m==="0") set("remove", 0);
+      else { set("remove", null); set("notes", (r.notes?r.notes+" ":"")+"[existing count unknown]"); }
+      render();
+    });
+  });
+
+  Array.prototype.forEach.call(v.querySelectorAll("#kp [data-k]"), function(btn){
+    btn.addEventListener("click", function(){
+      var k = btn.getAttribute("data-k");
+      if (r.cne) { r.cne=null; journal("areas",r.id,"cne","cleared"); }
+      var cur = r.routeFt===null ? "" : String(r.routeFt);
+      if (k==="del") cur = cur.slice(0,-1);
+      else if (cur.length < 4) cur += k;
+      set("routeFt", cur==="" ? null : parseInt(cur,10));
+      repaintKp();
+    });
+  });
+  $("cne").addEventListener("click", function(){
+    if (r.cne) { set("cne",null); repaintKp(); $("cnereasons").innerHTML=""; return; }
+    $("cnereasons").innerHTML = '<div class="hint" style="margin:8px 0 4px;font-weight:700">'+
+      'Why could the route not be established? (required)</div><div class="chips">'+
+      DATA.enums.routeBlockReason.map(function(x){
+        return '<button class="chip sm" data-cne="'+esc(x)+'">'+esc(x)+'</button>'; }).join("")+
+      '</div>';
+    Array.prototype.forEach.call($("cnereasons").querySelectorAll("[data-cne]"), function(bb){
+      bb.addEventListener("click", function(){
+        var why = bb.getAttribute("data-cne");
+        set("cne", why); set("routeFt", null); set("basis","Unverified");
+        if (r.notes.indexOf("ROUTE NOT ESTABLISHED") < 0)
+          set("notes", "ROUTE NOT ESTABLISHED: "+why+(r.notes?" — "+r.notes:""));
+        mintQ(site,b,room,"Pathways and routes",
+          "Route could not be established at "+site+" "+b+" "+room+" ("+why+
+          "). Confirm the intended pathway and whether a new pathway is required.");
+        $("cnereasons").innerHTML = "";
+        repaintKp();
+      });
+    });
+  });
+
+  $("phfrom").addEventListener("click", function(){
+    set("photoFrom", hhmm()); this.textContent = "From "+r.photoFrom; });
+  $("phto").addEventListener("click", function(){
+    set("photoTo", hhmm());
+    this.textContent = "To "+r.photoTo;
+    var pid = "PH-"+devCode()+pad2(nextSeq("ph"));
+    S.photos[pid] = {id:pid, site:site, b:b, room:room, view:"Identifier",
+      desc:"Marker + overview + devices + pathways", rel:r.id, q:"",
+      folder:site==="RHS"?"Rocklin High — Job Walk":"Rocklin Elementary — Job Walk",
+      notes:"iPhone photos "+(r.photoFrom||"?")+"–"+(r.photoTo||"?")};
+    flushSave();
+  });
+
+  bindText(v,"rid",function(x){ set("rid",x); });
+  bindText(v,"cut",function(x){ set("cut",x); });
+  bindText(v,"notes",function(x){ set("notes",x); });
+
+  $("delrec").addEventListener("click", function(){
+    if (!confirm("Delete this record?")) return;
+    delete S.areas[r.id]; if (S.lastArea===r.id) S.lastArea=null;
+    flushSave(); back();
+  });
+  $("savenext").addEventListener("click", function(){
+    if (!r.touched) r.touched = true;
+    if (r.clg===null && r.wall===null && r.spk===null && !r.oth && !r.cne) {
+      if (!confirm("No counts and no “could not establish” on this record. Save anyway?")) return;
+    }
+    S.lastArea = r.id;
+    if (NAV.adhoc) mintQ(site,b,room,"Room counts",
+      "Room/space “"+room+"” at "+site+" "+b+" is not in the Appendix A/B/C "+
+      "reference list. Confirm it is in scope and how it is counted.");
+    flushSave(); back();
+  });
+
+  repaintKp();
+}
+
+function subText(r){
+  var s = sub(r);
+  if (r.cne) return "route not established — no footage computed";
+  if (s === null) return "enter counts and a route length for a footage subtotal";
+  return totNew(r)+" × ("+r.routeFt+" + "+(r.loops||0)+") = "+s.toLocaleString()+" ft";
+}
+
+/* ------------------------------------------------------------------
+   8. CLOSET / FACILITY / QUESTION forms
+   ------------------------------------------------------------------ */
+function scCloset(v){
+  var site=NAV.site, b=NAV.b, def=bld(site,b);
+  var c = NAV.id ? S.closets[NAV.id] : null;
+  if (!c) {
+    var id = site+"-"+b+"-CL-"+devCode()+pad2(nextSeq("c"));
+    c = {id:id, site:site, b:b, room:"", served:b, switches:[], rack:null,
+         w:null,h:null,d:null, ru:null, ports:null, newPorts:null, newCab:null,
+         panels:null, fiber:null, photoFrom:null, photoTo:null, notes:""};
+    S.closets[id] = c;
+  }
+  head(site+" "+b+" · closet", c.id);
+  function set(k,val){ c[k]=val; journal("closets",c.id,k,val); queueSave(); }
+
+  var html = '<div class="note flag"><b>Fiber is out of scope — protect it.</b> '+
+    'Record whether fiber is present and whether the copper work disturbs it. Where a new '+
+    'cabinet goes in, existing fiber is pulled back and re-installed.</div>';
+
+  html += '<div class="sec">Which switches are in THIS cabinet</div><div class="chips">';
+  def.switches.forEach(function(sw){
+    html += '<button class="chip sm'+(c.switches.indexOf(sw)>=0?" on":"")+
+      '" data-sw="'+esc(sw)+'">'+esc(sw)+'</button>';
+  });
+  html += '</div><div class="hint">Tick every switch sharing this physical cabinet. '+
+    'Three RHS switches sit in J-1; two in the V annex.</div>';
+
+  html += '<div class="sec">Physical</div>'+
+    '<div class="fld"><label>Room / location</label><input type="text" id="croom" value="'+
+      esc(c.room)+'" autocapitalize="characters"></div>'+
+    '<div class="fld"><label>Buildings served</label><input type="text" id="cserved" value="'+
+      esc(c.served)+'" autocapitalize="characters"></div>'+
+    chipsFld("Existing rack / cabinet","rack",DATA.enums.rackType,c.rack)+
+    '<div class="sec">Dimensions and capacity</div>'+
+    numRow([["w","Width (in)",c.w],["h","Height (in)",c.h],["d","Depth (in)",c.d]])+
+    numRow([["ru","Usable RU",c.ru],["ports","Existing ports",c.ports],
+            ["newPorts","New ports needed",c.newPorts]])+
+    numRow([["panels","24-port panels needed",c.panels]])+
+    chipsFld("New cabinet needed","newCab",DATA.enums.yesNoVerify,c.newCab)+
+    chipsFld("FIBER PRESENT in this cabinet?","fiber",DATA.enums.yesNoVerify,c.fiber)+
+    '<div class="sec">Photos</div><div class="chips">'+
+      '<button class="chip" id="cfrom">'+(c.photoFrom?"From "+esc(c.photoFrom):"&#9654; Start "+hhmm())+'</button>'+
+      '<button class="chip" id="cto">'+(c.photoTo?"To "+esc(c.photoTo):"&#9632; Stop")+'</button></div>'+
+      '<div class="hint">Rack front, rack rear, cable entry, fiber, power, grounding, '+
+      'clearance. The desk fills the rest from these.</div>'+
+    '<div class="fld" style="margin-top:12px"><label>Notes — power, grounding, clearance, '+
+      'congestion, outage needs</label><textarea id="cnotes" autocapitalize="sentences">'+
+      esc(c.notes)+'</textarea></div>';
+
+  v.innerHTML = html;
+  $("savebar").className = "save";
+  $("savebar").innerHTML = '<div class="two"><button class="alt" id="cdel">Delete</button>'+
+    '<button id="csave">Save closet &rsaquo;</button></div>';
+
+  Array.prototype.forEach.call(v.querySelectorAll("[data-sw]"), function(btn){
+    btn.addEventListener("click", function(){
+      var sw = btn.getAttribute("data-sw");
+      var i = c.switches.indexOf(sw);
+      if (i>=0) c.switches.splice(i,1); else c.switches.push(sw);
+      journal("closets",c.id,"switches",c.switches.join(";"));
+      queueSave(); render();
+    });
+  });
+  wireChips(v, set);
+  wireNums(v, set);
+  bindText(v,"croom",function(x){ set("room",x); });
+  bindText(v,"cserved",function(x){ set("served",x); });
+  bindText(v,"cnotes",function(x){ set("notes",x); });
+  $("cfrom").addEventListener("click", function(){ set("photoFrom",hhmm()); this.textContent="From "+c.photoFrom; });
+  $("cto").addEventListener("click", function(){ set("photoTo",hhmm()); this.textContent="To "+c.photoTo; });
+  $("cdel").addEventListener("click", function(){
+    if (!confirm("Delete this closet record?")) return;
+    delete S.closets[c.id]; flushSave(); back();
+  });
+  $("csave").addEventListener("click", function(){
+    if (c.fiber === "Yes") mintQ(site,b,c.room||c.id,"Fiber and cabinets",
+      "Fiber is present in closet "+(c.room||c.id)+" at "+site+" "+b+
+      ". Confirm responsibility for pulling back and re-installing the fiber assembly "+
+      "where a new cabinet is set, and the protection required.");
+    flushSave(); back();
+  });
+}
+
+function scFac(v){
+  var site=NAV.site, b=NAV.b;
+  var def = null;
+  DATA.facilities.forEach(function(f){ if (f.name===NAV.fac) def=f; });
+  var r = NAV.id ? S.facs[NAV.id] : null;
+  if (!r) {
+    var id = site+"-"+b+"-FAC-"+devCode()+pad2(nextSeq("c"));
+    r = {id:id, site:site, fac:NAV.fac, priceTo:(def?def.priceTo:b), equip:"",
+         iface:null, devices:null, newDrops:null, remove:null, routeFt:null, cne:null,
+         from:"", pathway:null, power:null, photoFrom:null, photoTo:null, notes:""};
+    S.facs[id] = r;
+  }
+  head("Athletics · "+(NAV.fac||""), r.id);
+  function set(k,val){ r[k]=val; journal("facs",r.id,k,val); queueSave(); }
+
+  var html = "";
+  if (def) html += '<div class="note"><b>District note</b><br>'+esc(def.note)+'</div>';
+  html += '<div class="note flag"><b>No reference data exists for this facility.</b> '+
+    'Interface type is the decisive field — if it is not Ethernet, "replace the cabling" '+
+    'means something different and it becomes a written question.</div>';
+
+  html += chipsFld("Priced on which bid line?","priceTo",["Football","Pool","FM","J","G"],
+    r.priceTo, "Appendix B prices athletic equipment on the Football, Pool and FM lines. "+
+    "Six facilities have no line of their own — that is itself a question to submit.");
+  html += '<div class="fld"><label>Equipment found</label><input type="text" id="feq" value="'+
+    esc(r.equip)+'" placeholder="scoreboard, timing system, camera, horn…"></div>';
+  html += chipsFld("INTERFACE TYPE","iface",DATA.enums.interfaceType,r.iface);
+  html += numRow([["devices","Devices",r.devices],["newDrops","New drops",r.newDrops],
+                  ["remove","Existing to remove",r.remove]]);
+  html += numRow([["routeFt","Route length (ft)",r.routeFt]]);
+  html += '<div class="fld"><label>Route from where?</label><input type="text" id="ffrom" value="'+
+    esc(r.from)+'" placeholder="e.g. RH-Football-PB-CX6100-33"></div>';
+  html += chipsFld("Pathway","pathway",["Underground conduit","Aerial","Surface raceway",
+    "Interior","Unknown"],r.pathway);
+  html += chipsFld("Power present?","power",["Yes","No","Unknown"],r.power);
+  html += '<div class="sec">Photos</div><div class="chips">'+
+    '<button class="chip" id="ffp">'+(r.photoFrom?"From "+esc(r.photoFrom):"&#9654; Start "+hhmm())+'</button>'+
+    '<button class="chip" id="ftp">'+(r.photoTo?"To "+esc(r.photoTo):"&#9632; Stop")+'</button></div>';
+  html += '<div class="fld" style="margin-top:12px"><label>Notes</label>'+
+    '<textarea id="fnotes" autocapitalize="sentences">'+esc(r.notes)+'</textarea></div>';
+
+  v.innerHTML = html;
+  $("savebar").className = "save";
+  $("savebar").innerHTML = '<div class="two"><button class="alt" id="fdel">Delete</button>'+
+    '<button id="fsave">Save facility &rsaquo;</button></div>';
+
+  wireChips(v, set); wireNums(v, set);
+  bindText(v,"feq",function(x){ set("equip",x); });
+  bindText(v,"ffrom",function(x){ set("from",x); });
+  bindText(v,"fnotes",function(x){ set("notes",x); });
+  $("ffp").addEventListener("click", function(){ set("photoFrom",hhmm()); this.textContent="From "+r.photoFrom; });
+  $("ftp").addEventListener("click", function(){ set("photoTo",hhmm()); this.textContent="To "+r.photoTo; });
+  $("fdel").addEventListener("click", function(){
+    if (!confirm("Delete this facility record?")) return;
+    delete S.facs[r.id]; flushSave(); back();
+  });
+  $("fsave").addEventListener("click", function(){
+    if (r.iface && r.iface !== "Ethernet / PoE")
+      mintQ(site, r.priceTo, r.fac, "Device interfaces",
+        r.fac+": "+(r.equip||"equipment")+" is on "+r.iface+
+        ", not Ethernet. Confirm the scope of “replace the cabling” for this "+
+        "device, the required cable type, and the termination and testing standard.");
+    flushSave(); back();
+  });
+}
+
+function scQ(v){
+  var site=NAV.site, b=NAV.b;
+  var q = NAV.id ? S.qs[NAV.id] : null;
+  if (!q) {
+    var n = nextSeq("q");
+    var id = "Q"+(n<100?("00"+n).slice(-3):n)+"-"+devCode();
+    q = {id:id, site:site, b:b, where:"", topic:"", text:"", pri:"High",
+         status:"Open", field:"", impact:""};
+    S.qs[id] = q;
+  }
+  head("Question "+q.id, site+" "+b);
+  function set(k,val){ q[k]=val; journal("qs",q.id,k,val); queueSave(); }
+  v.innerHTML =
+    '<div class="note flag"><b>Verbal answers are not binding.</b> Write what was said in '+
+    '"what was said verbally", then file the question in writing to '+esc(DATA.walk.email)+
+    ' — subject "'+esc(DATA.walk.subject)+'". Send the first batch '+esc(DATA.walk.qTarget)+'.</div>'+
+    '<div class="fld"><label>Room / closet / route</label><input type="text" id="qw" value="'+
+      esc(q.where)+'"></div>'+
+    '<div class="fld"><label>Topic</label><input type="text" id="qt" value="'+esc(q.topic)+
+      '" placeholder="quantities, interfaces, cabinets, testing…"></div>'+
+    '<div class="fld"><label>Question to submit</label><textarea id="qx" '+
+      'autocapitalize="sentences">'+esc(q.text)+'</textarea></div>'+
+    chipsFld("Priority","pri",DATA.enums.priority,q.pri)+
+    '<div class="fld"><label>What was said verbally (not binding)</label>'+
+      '<textarea id="qf" autocapitalize="sentences">'+esc(q.field)+'</textarea></div>'+
+    '<div class="fld"><label>Follow-up / cost impact</label><input type="text" id="qi" value="'+
+      esc(q.impact)+'"></div>';
+  $("savebar").className = "save";
+  $("savebar").innerHTML = '<div class="two"><button class="alt" id="qdel">Delete</button>'+
+    '<button id="qsave">Save question &rsaquo;</button></div>';
+  wireChips(v,set);
+  bindText(v,"qw",function(x){ set("where",x); });
+  bindText(v,"qt",function(x){ set("topic",x); });
+  bindText(v,"qx",function(x){ set("text",x); });
+  bindText(v,"qf",function(x){ set("field",x); });
+  bindText(v,"qi",function(x){ set("impact",x); });
+  $("qdel").addEventListener("click", function(){
+    if (!confirm("Delete this question?")) return;
+    delete S.qs[q.id]; flushSave(); back(); });
+  $("qsave").addEventListener("click", function(){ flushSave(); back(); });
+}
+
+function mintQ(site,b,where,topic,text){
+  var dup = vals(S.qs).some(function(x){ return x.text === text; });
+  if (dup) return null;
+  var n = nextSeq("q");
+  var id = "Q"+(n<100?("00"+n).slice(-3):n)+"-"+devCode();
+  S.qs[id] = {id:id, site:site, b:b, where:where, topic:topic, text:text,
+              pri:"High", status:"Open", field:"", impact:"auto-raised in the field"};
+  journal("qs",id,"auto",topic);
+  queueSave();
+  return id;
+}
+
+/* ------------------------------------------------------------------
+   9. widgets
+   ------------------------------------------------------------------ */
+function chipsFld(label,key,opts,cur,hint){
+  var h = '<div class="fld"><label>'+esc(label)+'</label><div class="chips">';
+  opts.forEach(function(o){
+    h += '<button class="chip'+(String(cur)===String(o)?" on":"")+'" data-ck="'+esc(key)+
+         '" data-cv="'+esc(o)+'">'+esc(o)+'</button>';
+  });
+  h += '</div>'+(hint?'<div class="hint">'+esc(hint)+'</div>':'')+'</div>';
+  return h;
+}
+function wireChips(root, set){
+  Array.prototype.forEach.call(root.querySelectorAll("[data-ck]"), function(btn){
+    btn.addEventListener("click", function(){
+      var k = btn.getAttribute("data-ck"), raw = btn.getAttribute("data-cv");
+      var v = /^-?\d+$/.test(raw) ? parseInt(raw,10) : raw;
+      set(k, v);
+      var sibs = btn.parentNode.querySelectorAll("[data-ck='"+k+"']");
+      Array.prototype.forEach.call(sibs, function(s){ s.className = "chip" +
+        (s.className.indexOf("sm")>=0?" sm":""); });
+      btn.className = "chip" + (btn.className.indexOf("sm")>=0?" sm":"") + " on";
+    });
+  });
+}
+function stepper(label,key,val){
+  return '<div class="step"><span class="sl">'+esc(label)+'</span>'+
+    '<button class="pm" data-sk="'+key+'" data-sd="-1">&minus;</button>'+
+    '<span class="sv" data-sv="'+key+'">'+(val===null||val===undefined?"—":val)+'</span>'+
+    '<button class="pm" data-sk="'+key+'" data-sd="1">+</button></div>';
+}
+function wireSteppers(root, rec, set){
+  Array.prototype.forEach.call(root.querySelectorAll("[data-sk]"), function(btn){
+    btn.addEventListener("click", function(){
+      var k = btn.getAttribute("data-sk"), d = parseInt(btn.getAttribute("data-sd"),10);
+      var cur = rec[k]; if (cur===null||cur===undefined) cur = 0;
+      var nv = Math.max(0, cur + d);
+      set(k, nv);
+      var sv = root.querySelector("[data-sv='"+k+"']");
+      if (sv) sv.textContent = nv;
+    });
+  });
+}
+function numRow(items){
+  var h = '<div class="fld"><div style="display:flex;gap:7px">';
+  items.forEach(function(it){
+    h += '<div style="flex:1"><label style="font-size:12px">'+esc(it[1])+'</label>'+
+      '<input type="text" inputmode="numeric" pattern="[0-9]*" data-nk="'+it[0]+
+      '" value="'+(it[2]===null||it[2]===undefined?"":it[2])+
+      '" autocapitalize="off" autocorrect="off" spellcheck="false"></div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+function wireNums(root, set){
+  Array.prototype.forEach.call(root.querySelectorAll("[data-nk]"), function(inp){
+    var h = function(){
+      var v = inp.value.replace(/[^0-9]/g,"");
+      if (v !== inp.value) inp.value = v;
+      set(inp.getAttribute("data-nk"), v===""?null:parseInt(v,10));
+    };
+    inp.addEventListener("input", h);
+    inp.addEventListener("blur", h);
+  });
+}
+/* uncontrolled text: dictation fires composition events that fight re-render */
+function bindText(root,id,set){
+  var el = root.querySelector("#"+id); if (!el) return;
+  var t=null;
+  el.addEventListener("input", function(){
+    clearTimeout(t); var self=this;
+    t = setTimeout(function(){ set(self.value); }, 350);
+  });
+  el.addEventListener("blur", function(){ clearTimeout(t); set(this.value); });
+}
+
+/* ------------------------------------------------------------------
+   10. EXPORT
+   ------------------------------------------------------------------ */
+function csvCell(v){
+  if (v === null || v === undefined || v === "") return '""';
+  return '"' + String(v).replace(/"/g,'""') + '"';
+}
+function csvRows(rows){ return rows.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n"); }
+
+function areaRows(){
+  var rows = [];
+  vals(S.areas).filter(function(a){ return a.touched; }).forEach(function(r){
+    rows.push([r.id, r.site, r.b, r.room, r.type, r.closet,
+      r.clg, r.wall, r.spk, totNew(r)||"", r.oth, r.remove,
+      r.cne ? "" : r.routeFt, r.loops, r.cne ? "" : (sub(r)===null?"":sub(r)),
+      r.cne ? "Unverified" : r.basis,
+      r.ceil, r.ht, r.acc, r.rid, r.rdiff, r.cut,
+      photoIdsFor(r.id), qIdsFor(r.site,r.b,r.room), r.notes]);
+  });
+  // athletic facilities land in Areas with Area type = Athletic facility
+  vals(S.facs).forEach(function(f){
+    rows.push([f.id, f.site, f.priceTo, f.fac+" — "+(f.equip||"equipment"),
+      "Athletic facility", f.from, "", "", "", f.newDrops||"", f.newDrops, f.remove,
+      f.cne?"":f.routeFt, "", "", f.iface==="Unknown - must ask"?"Unverified":"Measured / counted",
+      "Exterior", "", "", f.pathway, "", "",
+      photoIdsFor(f.id), qIdsFor(f.site,f.priceTo,f.fac),
+      "INTERFACE: "+(f.iface||"not set")+(f.power?" · power "+f.power:"")+
+      (f.notes?" · "+f.notes:"")]);
+  });
+  return rows;
+}
+function photoIdsFor(rel){
+  return vals(S.photos).filter(function(p){ return p.rel===rel; })
+    .map(function(p){ return p.id; }).join("; ");
+}
+function qIdsFor(site,b,where){
+  return vals(S.qs).filter(function(q){
+    return q.site===site && q.b===b && q.where===where; })
+    .map(function(q){ return q.id; }).join("; ");
+}
+function closetRows(){
+  return vals(S.closets).map(function(c){
+    return [c.id, c.site, c.b, c.room, c.served, (c.switches||[]).join("; "),
+      c.rack, c.w, c.h, c.d, c.ru, c.ports, c.newPorts, c.newCab, "", c.panels,
+      "", "", "", c.fiber==="Yes"?"FIBER PRESENT — verify move impact":c.fiber,
+      "", "", "", "", photoIdsFor(c.id), "", c.notes];
+  });
+}
+function pathRows(){
+  return vals(S.paths).map(function(p){
+    return [p.id,p.site,p.b,p.from,p.to,p.type,p.ft,p.rise,p.size,p.fill,
+      "","","","","",p.newNeeded,"","",p.coexist,"","",p.notes];
+  });
+}
+function qRows(){
+  return vals(S.qs).map(function(q){
+    return [q.id,q.site,q.b,q.where,q.topic,q.text,q.pri,q.status,q.field,
+      "","","",q.impact];
+  });
+}
+function photoRows(){
+  return vals(S.photos).map(function(p){
+    return [p.id,p.site,p.b,p.room,p.view,p.desc,p.rel,p.q,p.folder,p.notes];
+  });
+}
+
+function buildExport(){
+  var t1 = siteTotals("RHS"), t2 = siteTotals("RES");
+  function zeroList(site){
+    return DATA.buildings.filter(function(x){
+      return x.site===site && bStatus(site,x.b)==="zero"; })
+      .map(function(x){ return x.b; }).join(", ") || "none";
+  }
+  var cneList = vals(S.areas).filter(function(a){ return a.touched && a.cne; })
+    .map(function(a){ return a.id+" ("+a.cne+")"; });
+
+  var out = "﻿=== ROCKLIN RFP 26-110 FIELD EXPORT ===\r\n";
+  out += "device "+devCode()+"  |  "+new Date().toString()+"\r\n";
+  out += "write #"+(meta.seq||0)+"  |  storage "+(storageOk?"OK":"FAILED: "+storageErr)+"\r\n\r\n";
+  out += "--- SUMMARY ---\r\n";
+  [["RHS",t1],["RES",t2]].forEach(function(p){
+    var s=p[0], t=p[1];
+    out += s+": "+t.done+" done / "+t.part+" partial / "+t.zero+" ZERO of "+t.lines+
+      " lines · "+t.areas+" areas · "+t.closets+" closets · "+t.facs+" facilities · "+
+      t.drops+" new drops · "+t.ft.toLocaleString()+" ft\r\n";
+    out += "  ZERO-RECORD BUILDINGS: "+zeroList(s)+"\r\n";
+  });
+  out += "ROUTE NOT ESTABLISHED: "+cneList.length+"\r\n";
+  cneList.forEach(function(x){ out += "  "+x+"\r\n"; });
+  out += "QUESTIONS RAISED IN FIELD: "+vals(S.qs).length+"\r\n\r\n";
+
+  var sheets = [["Areas",DATA.columns.Areas,areaRows()],
+                ["Closets",DATA.columns.Closets,closetRows()],
+                ["Pathways",DATA.columns.Pathways,pathRows()],
+                ["Questions",DATA.columns.Questions,qRows()],
+                ["Photos",DATA.columns.Photos,photoRows()]];
+  sheets.forEach(function(s){
+    out += "--- CSV: "+s[0]+" ("+s[2].length+" rows) ---\r\n";
+    out += s[1].map(csvCell).join(",")+"\r\n";
+    if (s[2].length) out += csvRows(s[2])+"\r\n";
+    out += "\r\n";
+  });
+  out += "--- JOURNAL (last field changes) ---\r\n"+(lsGet(KJ)||"(none)")+"\r\n\r\n";
+  out += "--- JSON ---\r\n"+JSON.stringify(S)+"\r\n";
+  return out;
+}
+
+function scExport(v){
+  head("Export", "copy it out, then email it to yourself");
+  var t1=siteTotals("RHS"), t2=siteTotals("RES");
+  var payload = buildExport();            // built eagerly: clipboard needs it sync
+  v.innerHTML =
+    '<div class="sum">'+esc(payload.split("--- CSV:")[0].replace("﻿",""))+'</div>'+
+    '<button class="ex-btn pri" id="copy">Copy everything</button>'+
+    '<button class="ex-btn" id="share">Share / email&hellip;</button>'+
+    '<button class="ex-btn" id="showraw">Show raw text — the path that cannot fail</button>'+
+    '<div class="note">Checkpoint after RHS, before driving to RES, and again at the end. '+
+    'Paste it into Mail <b>and</b> a new Apple Note — two silos, no network needed to '+
+    'write the Note.</div>'+
+    '<textarea class="raw hidden" id="raw" readonly></textarea>';
+
+  $("copy").addEventListener("click", function(){
+    var ok = false;
+    try { if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(payload); ok = true; } } catch(e){}
+    var ta = $("raw"); ta.value = payload; ta.className = "raw"; ta.select();
+    if (!ok) { try { ok = document.execCommand("copy"); } catch(e){} }
+    this.textContent = ok ? "Copied ✓ — now paste into Mail" : "Select the text below ↓";
+    S.checkpointAt = new Date().toISOString(); flushSave();
+  });
+  $("share").addEventListener("click", function(){
+    S.checkpointAt = new Date().toISOString(); flushSave();
+    try {
+      if (navigator.share) { navigator.share({title:"Rocklin field export", text:payload}); return; }
+    } catch(e){}
+    var ta = $("raw"); ta.value = payload; ta.className="raw"; ta.select();
+    this.textContent = "No share sheet — select the text below ↓";
+  });
+  $("showraw").addEventListener("click", function(){
+    var ta = $("raw"); ta.value = payload; ta.className = "raw"; ta.select();
+  });
+}
+
+function scMissing(v){
+  head("What's missing", "pre-departure checklist");
+  var html = "";
+  ["RHS","RES"].forEach(function(site){
+    var t = siteTotals(site);
+    html += '<div class="sec">'+site+" — "+t.done+" done, "+t.part+" partial, "+t.zero+" ZERO</div>";
+    DATA.buildings.filter(function(x){ return x.site===site; }).forEach(function(x){
+      var st = bStatus(site,x.b);
+      if (st === "done") return;
+      var a = areasOf(site,x.b), c = closetsOf(site,x.b);
+      var why = [];
+      if (!recCount(site,x.b)) why.push("NO RECORDS AT ALL");
+      else {
+        var hr = a.filter(function(r){ return r.kindRoom!==false; }).length;
+        if (a.length < x.classrooms.length)
+          why.push((x.classrooms.length-a.length)+" of "+x.classrooms.length+" rooms not captured");
+        var noLen = a.filter(function(r){ return r.routeFt===null && !r.cne; }).length;
+        if (noLen) why.push(noLen+" record(s) with no route length and no reason");
+        if (x.switches.length && !c.length) why.push("no closet record ("+x.switches.length+" switch(es) listed)");
+      }
+      html += '<button class="row" data-go="'+esc(site)+'|'+esc(x.b)+'">'+
+        '<span class="tick" style="color:'+(st==="zero"?"var(--bad)":"var(--warn)")+'">'+
+        (st==="zero"?"&#9888;":"&#8943;")+'</span>'+
+        '<span class="rl">'+esc(x.b)+' — '+esc(x.desc)+'<small>'+esc(why.join(" · "))+
+        '</small></span></button>';
+    });
+  });
+  if (!html) html = '<div class="note">Nothing outstanding. Every building has records, '+
+    'every record has a length or a stated reason, and every building with a listed switch '+
+    'has a closet record.</div>';
+  v.innerHTML = html;
+  Array.prototype.forEach.call(v.querySelectorAll("[data-go]"), function(btn){
+    btn.addEventListener("click", function(){
+      var p = btn.getAttribute("data-go").split("|");
+      go({screen:"bldg", site:p[0], b:p[1], tab:"rooms"});
+    });
+  });
+}
+
+$("exp").addEventListener("click", function(){ go({screen:"exportv"}); });
+$("miss").addEventListener("click", function(){ go({screen:"missing"}); });
+
+/* ------------------------------------------------------------------
+   11. boot
+   ------------------------------------------------------------------ */
+S = loadState();
+if (!S) { S = freshState(); persist(); }
+if (!S.seq) S.seq = {a:0,c:0,p:0,q:13,ph:0};
+if (S.seq.q < 13) S.seq.q = 13;      // Q001–Q013 are prefilled in the workbook
+NAV = S.device ? {screen:"sites"} : {screen:"device"};
+render();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(function(){});
+}
 </script>
 </body>
 </html>
